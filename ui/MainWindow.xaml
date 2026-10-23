@@ -1,0 +1,614 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ROG 月刃 控制中心" Width="1000" Height="700"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        UseLayoutRounding="True" FontFamily="Segoe UI, Microsoft YaHei UI">
+
+  <Window.Resources>
+
+    <SolidColorBrush x:Key="Accent" Color="#FF2D55"/>
+    <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#FF2D55" Offset="0"/>
+      <GradientStop Color="#FF7A3D" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="TextPrimary" Color="#F2F2F5"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="#8A8A99"/>
+    <SolidColorBrush x:Key="TextTertiary" Color="#5C5C6B"/>
+    <SolidColorBrush x:Key="CardBg" Color="#12121A"/>
+
+    <Style x:Key="Card" TargetType="Border">
+      <Setter Property="Background" Value="{StaticResource CardBg}"/>
+      <Setter Property="BorderBrush" Value="#1AFFFFFF"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="16"/>
+    </Style>
+
+    <Style x:Key="ChromeButton" TargetType="Button">
+      <Setter Property="Width" Value="34"/>
+      <Setter Property="Height" Value="34"/>
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" CornerRadius="8" Background="Transparent">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#14FFFFFF"/>
+                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="PrimaryButton" TargetType="Button">
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Padding" Value="20,0"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" CornerRadius="10" Background="{StaticResource AccentGradient}">
+              <Border.Effect>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#FF2D55" Opacity="0.45"/>
+              </Border.Effect>
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="bd" Property="Opacity" Value="0.35"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="GhostButton" TargetType="Button">
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Padding" Value="18,0"/>
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" CornerRadius="10" Background="#10FFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#1CFFFFFF"/>
+                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="Chip" TargetType="Button">
+      <Setter Property="Height" Value="32"/>
+      <Setter Property="MinWidth" Value="62"/>
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+      <Setter Property="FontSize" Value="12.5"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Margin" Value="0,0,8,0"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" CornerRadius="9" Background="#0CFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="1" Padding="14,0">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#18FFFFFF"/>
+                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+              </Trigger>
+              <Trigger Property="Tag" Value="on">
+                <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentGradient}"/>
+                <Setter TargetName="bd" Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="Foreground" Value="White"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="SegChip" TargetType="Button">
+      <Setter Property="Height" Value="28"/>
+      <Setter Property="MinWidth" Value="34"/>
+      <Setter Property="Margin" Value="0,0,4,0"/>
+      <Setter Property="FontSize" Value="11.5"/>
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" CornerRadius="7" Background="#0CFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="1" Padding="6,0">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#18FFFFFF"/>
+                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+              </Trigger>
+              <Trigger Property="Tag" Value="on">
+                <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentGradient}"/>
+                <Setter TargetName="bd" Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="Foreground" Value="White"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="MiniChip" TargetType="Button">
+      <Setter Property="Height" Value="26"/>
+      <Setter Property="MinWidth" Value="46"/>
+      <Setter Property="Margin" Value="0,0,7,0"/>
+      <Setter Property="FontSize" Value="11.5"/>
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" CornerRadius="7" Background="#0AFFFFFF" BorderBrush="#12FFFFFF" BorderThickness="1" Padding="11,0">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#1CFF2D55"/>
+                <Setter TargetName="bd" Property="BorderBrush" Value="#40FF2D55"/>
+                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="SliderFill" TargetType="RepeatButton">
+      <Setter Property="Focusable" Value="False"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RepeatButton">
+            <Border Background="Transparent">
+              <Border Height="6" CornerRadius="3" Background="{StaticResource AccentGradient}" VerticalAlignment="Center"/>
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="SliderEmpty" TargetType="RepeatButton">
+      <Setter Property="Focusable" Value="False"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RepeatButton">
+            <Border Background="Transparent">
+              <Border Height="6" CornerRadius="3" Background="#14FFFFFF" VerticalAlignment="Center"/>
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="SliderThumb" TargetType="Thumb">
+      <Setter Property="Width" Value="20"/>
+      <Setter Property="Height" Value="20"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Thumb">
+            <Grid>
+              <Ellipse Width="20" Height="20" Fill="{StaticResource AccentGradient}">
+                <Ellipse.Effect>
+                  <DropShadowEffect BlurRadius="16" ShadowDepth="0" Color="#FF3D5A" Opacity="0.75"/>
+                </Ellipse.Effect>
+              </Ellipse>
+              <Ellipse Width="7" Height="7" Fill="#FFFFFF" Opacity="0.95"/>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="RogSlider" TargetType="Slider">
+      <Setter Property="Height" Value="26"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Slider">
+            <Grid VerticalAlignment="Center" Background="Transparent">
+              <Track x:Name="PART_Track">
+                <Track.DecreaseRepeatButton>
+                  <RepeatButton Command="Slider.DecreaseLarge" Style="{StaticResource SliderFill}"/>
+                </Track.DecreaseRepeatButton>
+                <Track.IncreaseRepeatButton>
+                  <RepeatButton Command="Slider.IncreaseLarge" Style="{StaticResource SliderEmpty}"/>
+                </Track.IncreaseRepeatButton>
+                <Track.Thumb>
+                  <Thumb Style="{StaticResource SliderThumb}"/>
+                </Track.Thumb>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+  </Window.Resources>
+
+  <Border x:Name="Root" CornerRadius="16" Background="#0A0A0D" BorderBrush="#22FFFFFF" BorderThickness="1">
+    <Grid ClipToBounds="True">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="58"/>
+        <RowDefinition Height="*"/>
+        <RowDefinition Height="74"/>
+      </Grid.RowDefinitions>
+
+      <Ellipse Grid.RowSpan="3" Width="620" Height="420" HorizontalAlignment="Left" VerticalAlignment="Top"
+               Margin="-220,-240,0,0" IsHitTestVisible="False">
+        <Ellipse.Fill>
+          <RadialGradientBrush>
+            <GradientStop Color="#3DFF2D55" Offset="0"/>
+            <GradientStop Color="#00FF2D55" Offset="1"/>
+          </RadialGradientBrush>
+        </Ellipse.Fill>
+      </Ellipse>
+      <Ellipse Grid.RowSpan="3" Width="520" Height="360" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+               Margin="0,0,-200,-200" IsHitTestVisible="False">
+        <Ellipse.Fill>
+          <RadialGradientBrush>
+            <GradientStop Color="#26FF7A3D" Offset="0"/>
+            <GradientStop Color="#00FF7A3D" Offset="1"/>
+          </RadialGradientBrush>
+        </Ellipse.Fill>
+      </Ellipse>
+
+      <Grid Grid.Row="0" x:Name="TitleBar" Background="Transparent">
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="22,0,0,0">
+          <Border Width="6" Height="6" CornerRadius="3" Background="{StaticResource Accent}" VerticalAlignment="Center"/>
+          <TextBlock Text="ROG 月刃 控制中心" Margin="10,0,0,0" FontSize="13"
+                     Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,14,0">
+          <Button x:Name="BtnMin" Style="{StaticResource ChromeButton}">
+            <Path Data="M0,5 L10,5" Stroke="{StaticResource TextSecondary}" StrokeThickness="1.2"/>
+          </Button>
+          <Button x:Name="BtnClose" Style="{StaticResource ChromeButton}" Margin="2,0,0,0">
+            <Path Data="M0,0 L10,10 M10,0 L0,10" Stroke="{StaticResource TextSecondary}" StrokeThickness="1.2"/>
+          </Button>
+        </StackPanel>
+      </Grid>
+
+      <Grid Grid.Row="1" Margin="22,0,22,6">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="318"/>
+          <ColumnDefinition Width="18"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Style="{StaticResource Card}">
+          <Grid Margin="22,20,22,20">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Product shot of the actual mouse; the source art is already lit to match the card. -->
+            <Border Grid.Row="0" Height="148" CornerRadius="12" Background="#0E0E14" BorderBrush="#14FFFFFF" BorderThickness="1">
+              <Grid ClipToBounds="True">
+                <!-- Alignment must be explicit: a stretched Image lays out from the left edge,
+                     so UniformToFill's overflow crop is taken asymmetrically and the subject drifts right. -->
+                <Image x:Name="HeroImage" Stretch="UniformToFill"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                <!-- Feathered edge so the photo melts into the card instead of ending on a hard line. -->
+                <Border IsHitTestVisible="False">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                      <GradientStop Color="#FF0E0E14" Offset="0"/>
+                      <GradientStop Color="#000E0E14" Offset="0.14"/>
+                      <GradientStop Color="#000E0E14" Offset="0.86"/>
+                      <GradientStop Color="#FF0E0E14" Offset="1"/>
+                    </LinearGradientBrush>
+                  </Border.Background>
+                </Border>
+              </Grid>
+            </Border>
+
+            <StackPanel Grid.Row="1" Margin="2,16,0,0">
+              <TextBlock x:Name="DeviceName" Text="ROG 月刃 AimPoint 36K" FontSize="16" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextPrimary}" TextTrimming="CharacterEllipsis"/>
+              <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
+                <Border x:Name="StatusDot" Width="7" Height="7" CornerRadius="4" Background="#3DDC84" VerticalAlignment="Center"/>
+                <TextBlock x:Name="ConnText" Text="2.4 GHz 接收器" Margin="8,0,0,0" FontSize="12.5"
+                           Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+              </StackPanel>
+            </StackPanel>
+
+            <StackPanel Grid.Row="2" Margin="2,16,2,0" VerticalAlignment="Top">
+              <Border Height="1" Background="#14FFFFFF" Margin="0,0,0,16"/>
+              <Grid Margin="0,0,0,10">
+                <TextBlock Text="当前档位" FontSize="12" Foreground="{StaticResource TextTertiary}"/>
+                <TextBlock x:Name="SpecPreset" Text="--" FontSize="12" HorizontalAlignment="Right"
+                           Foreground="{StaticResource TextSecondary}"/>
+              </Grid>
+              <Grid Margin="0,0,0,10">
+                <TextBlock Text="轮询率" FontSize="12" Foreground="{StaticResource TextTertiary}"/>
+                <TextBlock x:Name="SpecRate" Text="--" FontSize="12" HorizontalAlignment="Right"
+                           Foreground="{StaticResource TextSecondary}"/>
+              </Grid>
+              <Grid Margin="0,0,0,10">
+                <TextBlock Text="按键响应" FontSize="12" Foreground="{StaticResource TextTertiary}"/>
+                <TextBlock x:Name="SpecDebounce" Text="--" FontSize="12" HorizontalAlignment="Right"
+                           Foreground="{StaticResource TextSecondary}"/>
+              </Grid>
+              <Grid Margin="0,0,0,10">
+                <TextBlock Text="连接方式" FontSize="12" Foreground="{StaticResource TextTertiary}"/>
+                <TextBlock x:Name="SpecConn" Text="2.4G 无线" FontSize="12" HorizontalAlignment="Right"
+                           Foreground="{StaticResource TextSecondary}"/>
+              </Grid>
+              <Grid>
+                <TextBlock Text="供电状态" FontSize="12" Foreground="{StaticResource TextTertiary}"/>
+                <TextBlock x:Name="SpecCharge" Text="--" FontSize="12" HorizontalAlignment="Right"
+                           Foreground="{StaticResource TextSecondary}"/>
+              </Grid>
+            </StackPanel>
+
+            <StackPanel Grid.Row="3" VerticalAlignment="Bottom" HorizontalAlignment="Center">
+              <Grid Width="128" Height="128">
+                <Ellipse Width="128" Height="128" Stroke="#10FFFFFF" StrokeThickness="9"/>
+                <Path x:Name="BatteryArc" StrokeThickness="9" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                      Stroke="{StaticResource AccentGradient}"/>
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                  <TextBlock x:Name="BatteryValue" Text="--" FontSize="32" FontWeight="Light"
+                             Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Center"/>
+                  <TextBlock Text="电量 %" FontSize="11" Foreground="{StaticResource TextTertiary}"
+                             HorizontalAlignment="Center" Margin="0,-3,0,0"/>
+                </StackPanel>
+              </Grid>
+              <TextBlock x:Name="BatteryHint" Text="正在读取…" Margin="0,12,0,0" FontSize="12"
+                         Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <Border Grid.Column="2" Style="{StaticResource Card}">
+          <Grid Margin="26,20,26,20">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+              <StackPanel VerticalAlignment="Top">
+                <TextBlock Text="DPI 灵敏度" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                <TextBlock Text="点击档位即切换，拖动滑块调节，滚轮可 50 步进" FontSize="11.5" Margin="0,6,0,0"
+                           Foreground="{StaticResource TextTertiary}"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <TextBlock x:Name="DpiValue" Text="--" FontSize="34" FontWeight="Light"
+                           Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center"/>
+                <TextBlock Text="DPI" FontSize="11" Margin="8,0,0,6" VerticalAlignment="Bottom"
+                           Foreground="{StaticResource TextTertiary}"/>
+              </StackPanel>
+            </Grid>
+
+            <StackPanel Grid.Row="1" x:Name="StagePanel" Orientation="Horizontal" Margin="0,20,0,0"/>
+
+            <Grid Grid.Row="2" Margin="0,14,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <Slider x:Name="DpiSlider" Style="{StaticResource RogSlider}" Minimum="100" Maximum="36000"
+                      SmallChange="50" LargeChange="50" VerticalAlignment="Center"/>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
+                <Button x:Name="BtnMinus" Style="{StaticResource ChromeButton}" Width="30" Height="30">
+                  <Path Data="M0,5 L10,5" Stroke="{StaticResource TextSecondary}" StrokeThickness="1.4"/>
+                </Button>
+                <Button x:Name="BtnPlus" Style="{StaticResource ChromeButton}" Width="30" Height="30" Margin="4,0,0,0">
+                  <Path Data="M5,0 L5,10 M0,5 L10,5" Stroke="{StaticResource TextSecondary}" StrokeThickness="1.4"/>
+                </Button>
+              </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="3" Margin="0,16,0,0">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="常用" FontSize="12" Foreground="{StaticResource TextTertiary}"
+                           VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <Button x:Name="Quick400" Style="{StaticResource MiniChip}" Content="400"/>
+                <Button x:Name="Quick800" Style="{StaticResource MiniChip}" Content="800"/>
+                <Button x:Name="Quick1600" Style="{StaticResource MiniChip}" Content="1600"/>
+                <Button x:Name="Quick2400" Style="{StaticResource MiniChip}" Content="2400"/>
+                <Button x:Name="Quick3200" Style="{StaticResource MiniChip}" Content="3200"/>
+              </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="4" Margin="0,18,0,0">
+              <Grid.RowDefinitions>
+                <RowDefinition Height="1"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+
+              <Border Grid.Row="0" Background="#14FFFFFF"/>
+
+              <Grid Grid.Row="1" Margin="0,18,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="轮询率" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
+                  <TextBlock Text="决定光标跟手程度，1000 Hz 最灵敏" FontSize="11" Margin="0,4,0,0"
+                             Foreground="{StaticResource TextTertiary}"/>
+                </StackPanel>
+                <StackPanel x:Name="RatePanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"/>
+              </Grid>
+
+              <Grid Grid.Row="2" Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="按键响应 (ms)" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
+                  <TextBlock Text="越大越不易误触" FontSize="11" Margin="0,4,0,0"
+                             Foreground="{StaticResource TextTertiary}"/>
+                </StackPanel>
+                <StackPanel x:Name="DebouncePanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"/>
+              </Grid>
+
+              <Grid Grid.Row="3" Margin="0,14,0,0">
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="直线修正" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
+                  <TextBlock Text="开启后移动轨迹更接近水平或垂直" FontSize="11" Margin="0,4,0,0"
+                             Foreground="{StaticResource TextTertiary}"/>
+                </StackPanel>
+                <ToggleButton x:Name="SnapToggle" HorizontalAlignment="Right" VerticalAlignment="Center"
+                              Width="48" Height="27" Cursor="Hand">
+                  <ToggleButton.Template>
+                    <ControlTemplate TargetType="ToggleButton">
+                      <Border x:Name="track" CornerRadius="13" Background="#1CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1">
+                        <Ellipse x:Name="knob" Width="19" Height="19" Fill="#FFFFFF" HorizontalAlignment="Left" Margin="4,0,0,0">
+                          <Ellipse.RenderTransform>
+                            <TranslateTransform x:Name="knobShift" X="0"/>
+                          </Ellipse.RenderTransform>
+                        </Ellipse>
+                      </Border>
+                      <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                          <Setter TargetName="track" Property="Background" Value="{StaticResource AccentGradient}"/>
+                          <Setter TargetName="track" Property="BorderBrush" Value="Transparent"/>
+                          <Trigger.EnterActions>
+                            <BeginStoryboard>
+                              <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="knobShift" Storyboard.TargetProperty="X"
+                                                 To="21" Duration="0:0:0.22">
+                                  <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut"/>
+                                  </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                              </Storyboard>
+                            </BeginStoryboard>
+                          </Trigger.EnterActions>
+                          <Trigger.ExitActions>
+                            <BeginStoryboard>
+                              <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="knobShift" Storyboard.TargetProperty="X"
+                                                 To="0" Duration="0:0:0.22">
+                                  <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut"/>
+                                  </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                              </Storyboard>
+                            </BeginStoryboard>
+                          </Trigger.ExitActions>
+                        </Trigger>
+                      </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                  </ToggleButton.Template>
+                </ToggleButton>
+              </Grid>
+
+              <Grid Grid.Row="4" Margin="0,14,0,0">
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="开机自启动" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
+                  <TextBlock Text="登录 Windows 后自动在托盘运行，可随时关闭" FontSize="11" Margin="0,4,0,0"
+                             Foreground="{StaticResource TextTertiary}"/>
+                </StackPanel>
+                <ToggleButton x:Name="AutostartToggle" HorizontalAlignment="Right" VerticalAlignment="Center"
+                              Width="48" Height="27" Cursor="Hand">
+                  <ToggleButton.Template>
+                    <ControlTemplate TargetType="ToggleButton">
+                      <Border x:Name="track" CornerRadius="13" Background="#1CFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1">
+                        <Ellipse x:Name="knob" Width="19" Height="19" Fill="#FFFFFF" HorizontalAlignment="Left" Margin="4,0,0,0">
+                          <Ellipse.RenderTransform>
+                            <TranslateTransform x:Name="knobShift" X="0"/>
+                          </Ellipse.RenderTransform>
+                        </Ellipse>
+                      </Border>
+                      <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                          <Setter TargetName="track" Property="Background" Value="{StaticResource AccentGradient}"/>
+                          <Setter TargetName="track" Property="BorderBrush" Value="Transparent"/>
+                          <Trigger.EnterActions>
+                            <BeginStoryboard>
+                              <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="knobShift" Storyboard.TargetProperty="X"
+                                                 To="21" Duration="0:0:0.22">
+                                  <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut"/>
+                                  </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                              </Storyboard>
+                            </BeginStoryboard>
+                          </Trigger.EnterActions>
+                          <Trigger.ExitActions>
+                            <BeginStoryboard>
+                              <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="knobShift" Storyboard.TargetProperty="X"
+                                                 To="0" Duration="0:0:0.22">
+                                  <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut"/>
+                                  </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                              </Storyboard>
+                            </BeginStoryboard>
+                          </Trigger.ExitActions>
+                        </Trigger>
+                      </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                  </ToggleButton.Template>
+                </ToggleButton>
+              </Grid>
+
+              <StackPanel Grid.Row="5" VerticalAlignment="Bottom">
+              <Border Height="42" CornerRadius="10" Background="#0CFFFFFF"
+                      BorderBrush="#14FFFFFF" BorderThickness="1" Padding="14,0">
+                <Grid VerticalAlignment="Center">
+                  <TextBlock x:Name="SaveHint" Text="等待设备…" FontSize="11.5"
+                             Foreground="{StaticResource TextTertiary}" VerticalAlignment="Center"/>
+                  <TextBlock x:Name="InfoFirmware" Text="固件 --" FontSize="11.5" HorizontalAlignment="Right"
+                             VerticalAlignment="Center" Foreground="{StaticResource TextTertiary}"/>
+                </Grid>
+              </Border>
+              </StackPanel>
+            </Grid>
+          </Grid>
+        </Border>
+      </Grid>
+
+      <Grid Grid.Row="2" Margin="22,0,22,18">
+        <TextBlock x:Name="FootStatus" Text="正在连接设备…" FontSize="12"
+                   Foreground="{StaticResource TextTertiary}" VerticalAlignment="Center"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <Button x:Name="BtnTrayDiag" Style="{StaticResource GhostButton}" Content="托盘诊断" Margin="0,0,8,0"/>
+          <Button x:Name="BtnRefresh" Style="{StaticResource GhostButton}" Content="重新读取"/>
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </Border>
+</Window>

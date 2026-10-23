@@ -1,0 +1,14 @@
+# Build output
+dist/
+*.exe
+*.pdb
+
+# Logs
+tray.log
+*.log
+
+# User-local artifacts
+_backup/
+_test/
+*.user
+.vs/
