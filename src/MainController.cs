@@ -283,7 +283,11 @@ namespace RogMouse
             if (_autostartToggle == null) return;
             // The switch is host-side state, not device state: it reads and writes the
             // registry and must not wait for a device answer.
-            _autostartToggle.IsChecked = AutoStart.IsEnabled();
+            bool enabled = AutoStart.IsEnabled();
+            _autostartToggle.IsChecked = enabled;
+            // Upgrade an existing v1.3 entry in place, so the current user gets silent
+            // startup without having to toggle the switch off and on after updating.
+            if (!enabled && AutoStart.NeedsUpgrade()) AutoStart.Enable();
             _autostartToggle.Click += delegate
             {
                 bool want = _autostartToggle.IsChecked == true;
@@ -481,11 +485,37 @@ namespace RogMouse
         public void ActivateWindow()
         {
             TrayIcon.Log("window show requested: single-instance activation");
+            _win.ShowInTaskbar = true;
+            if (!_win.IsVisible)
+            {
+                _win.Left = (SystemParameters.PrimaryScreenWidth - _win.Width) / 2;
+                _win.Top = (SystemParameters.PrimaryScreenHeight - _win.Height) / 2;
+            }
             _win.Show();
             if (_win.WindowState == WindowState.Minimized) _win.WindowState = WindowState.Normal;
             _win.Activate();
             _win.Topmost = true;
             _win.Topmost = false;
+        }
+
+        /// <summary>
+        /// Leaves a logon launch parked in the tray after the hidden host window has been
+        /// realized. If the shell refused the icon, keep the window visible instead; hiding
+        /// it would leave no way to reach the app.
+        /// </summary>
+        public void HideForStartup()
+        {
+            if (_tray == null || !_tray.IsRegistered)
+            {
+                _win.ShowInTaskbar = true;
+                _win.Left = (SystemParameters.PrimaryScreenWidth - _win.Width) / 2;
+                _win.Top = (SystemParameters.PrimaryScreenHeight - _win.Height) / 2;
+                _footStatus.Text = "开机启动时未能创建托盘图标，主窗口保持显示";
+                _win.Show();
+                return;
+            }
+            TrayIcon.Log("window hidden: startup");
+            _hiddenNotice = true;
         }
 
         /// <summary>
