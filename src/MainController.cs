@@ -51,6 +51,7 @@ namespace RogMouse
         private System.Windows.Threading.DispatcherTimer _poll;
         private System.Windows.Threading.DispatcherTimer _watch;
         private System.Windows.Threading.DispatcherTimer _trayPoll;
+        private System.Windows.Threading.DispatcherTimer _headsetTrayPoll;
         private int _quietTicks;
         private bool _allowClose;
         private bool _hiddenNotice;
@@ -109,16 +110,19 @@ namespace RogMouse
             DrawBattery(-1);
 
             _win.Loaded += delegate { BeginRefresh(); };
+            _win.Loaded += delegate { _headset.ReadOnceForTrayStartup(); };
+            _win.Loaded += delegate { UpdateTrayFromHeadset(); };
             _headsetService = HeadsetService.CreateDefault();
             _headsetService.Log = TrayIcon.Log;
             _headset = new HeadsetController(_win, _headsetService, NoDevice, NoPoll);
+            _headset.ReadingChanged = delegate(HeadsetReading reading) { PushTray(); };
             _headset.Initialize();
 
             // The offscreen renderer builds this same tree just to grab a PNG; a tray icon
             // and a polling timer would outlive that process for no reason.
             if (Headless) return;
 
-            _tray = new TrayIcon(_win, BeginRefresh, Quit);
+            _tray = new TrayIcon(_win, RefreshBothFromTray, Quit, ShowDeviceFromTray);
             _tray.RegisteredChanged += delegate { ApplyTrayStatus(); };
             // Tray checkbox changed -> repaint the in-app switch from the registry.
             _tray.AutostartChanged += delegate
@@ -167,6 +171,13 @@ namespace RogMouse
                 _trayPoll.Interval = TimeSpan.FromSeconds(300);
                 _trayPoll.Tick += delegate { TrayPollTick(); };
                 _trayPoll.Start();
+
+                // The headset has its own slow keep-alive so the tray still has a fresh
+                // value after the window is parked. Fullscreen and --no-* modes skip it.
+                _headsetTrayPoll = new System.Windows.Threading.DispatcherTimer();
+                _headsetTrayPoll.Interval = TimeSpan.FromSeconds(300);
+                _headsetTrayPoll.Tick += delegate { HeadsetTrayTick(); };
+                _headsetTrayPoll.Start();
             }
         }
 
@@ -676,6 +687,7 @@ namespace RogMouse
             if (_watch != null) _watch.Stop();
             if (_poll != null) _poll.Stop();
             if (_trayPoll != null) _trayPoll.Stop();
+            if (_headsetTrayPoll != null) _headsetTrayPoll.Stop();
             if (_headset != null) _headset.Shutdown();
             if (_tray != null) { _tray.Dispose(); _tray = null; }
             if (_api != null) { _api.Dispose(); _api = null; }
@@ -874,12 +886,37 @@ namespace RogMouse
                     if (level >= 0)
                     {
                         if (_state != null) _state.BatteryPercent = level;
-                        if (_tray != null) _tray.Update(level, _conn != null ? _conn.TransportShort : "");
+                        PushTray();
                         TrayIcon.Log("tray keep-alive: battery " + level + "%");
                     }
                     _busy = false;
                 }));
             });
+        }
+
+        /// <summary>
+        /// Slow headset keep-alive for the tray. It never runs while the app is hidden,
+        /// minimized, fullscreen, or in a diagnostic --no-* mode.
+        /// </summary>
+        private void HeadsetTrayTick()
+        {
+            if (NoDevice || NoPoll || FullScreenAppRunning()) return;
+            if (_headset == null) return;
+            _headset.RefreshForTray(delegate(HeadsetReading reading) { PushTray(); });
+        }
+
+        private void RefreshBothFromTray()
+        {
+            BeginRefresh();
+            if (_headset != null)
+                _headset.RefreshForTray(delegate(HeadsetReading reading) { PushTray(); });
+        }
+
+        /// <summary>Tray menu shortcut: open the window on the requested device page.</summary>
+        public void ShowDeviceFromTray(bool headset)
+        {
+            ActivateWindow();
+            SwitchDevice(headset, true);
         }
 
         /// <summary>
@@ -1180,7 +1217,18 @@ namespace RogMouse
         {
             if (_tray == null) return;
             int percent = _state != null ? _state.BatteryPercent : -1;
-            _tray.Update(percent, _conn != null ? _conn.TransportShort : "");
+            var hs = _headset != null ? _headset.LastReading : null;
+            int headsetPercent = hs != null && hs.Status == HeadsetStatus.Ok ? hs.BatteryPercent : -1;
+            bool powerKnown = hs != null && hs.ChargingKnown;
+            bool external = hs != null && hs.ExternalPower;
+            _tray.Update(percent, _conn != null ? _conn.TransportShort : "",
+                headsetPercent, powerKnown, external);
+        }
+
+        /// <summary>Pushes the current headset value to the tray after a page read.</summary>
+        private void UpdateTrayFromHeadset()
+        {
+            PushTray();
         }
 
         /// <summary>

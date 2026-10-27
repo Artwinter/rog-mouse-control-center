@@ -64,6 +64,33 @@ namespace RogMouse
 
         public bool PageSelected { get { return _pageSelected; } }
 
+        /// <summary>Latest reading for the tray. Null until the first attempt finishes.</summary>
+        public HeadsetReading LastReading { get { return _last; } }
+        public Action<HeadsetReading> ReadingChanged;
+
+        public bool Suspended { get { return _suspended; } }
+
+        /// <summary>
+        /// Tray keep-alive. Unlike <see cref="Refresh"/>, this is allowed while the headset
+        /// page is not selected, but it never runs while the window is parked or fullscreen.
+        /// </summary>
+        public void RefreshForTray(Action<HeadsetReading> done)
+        {
+            if (_noDevice || _noPoll || _busy) return;
+            _busy = true;
+            Task.Factory.StartNew(delegate { return _service.ReadOnce(true); })
+                .ContinueWith(delegate(Task<HeadsetReading> t)
+                {
+                    var reading = t.IsFaulted ? null : t.Result;
+                    _win.Dispatcher.BeginInvoke(new Action(delegate
+                    {
+                        if (reading != null) _last = reading;
+                        _busy = false;
+                        if (done != null) done(reading);
+                    }));
+                });
+        }
+
         public void SelectPage(bool selected)
         {
             bool wasSelected = _pageSelected;
@@ -113,6 +140,17 @@ namespace RogMouse
             else if (_pageSelected && !_suspended) SyncTimer(true);
         }
 
+        /// <summary>
+        /// One startup read for the tray. It does not start the 60-second page timer and
+        /// still respects --no-device, --no-poll, hidden/minimized, and fullscreen gates.
+        /// </summary>
+        public void ReadOnceForTrayStartup()
+        {
+            if (_noDevice || _noPoll || _busy || _suspended) return;
+            if (!_win.IsVisible || _win.WindowState == WindowState.Minimized) return;
+            RefreshForTray(delegate(HeadsetReading reading) { });
+        }
+
         private void SyncTimer(bool enabled)
         {
             if (_timer == null) return;
@@ -155,6 +193,7 @@ namespace RogMouse
                             return;
                         }
                         _last = reading;
+                        if (ReadingChanged != null) ReadingChanged(reading);
                         Render(reading);
                         _busy = false;
                         if (_refresh != null) _refresh.IsEnabled = true;

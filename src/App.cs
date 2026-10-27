@@ -247,7 +247,7 @@ namespace RogMouse
                 for (int i = 0; i < levels.Length; i++)
                 {
                     IntPtr handle;
-                    using (var ico = TrayIcon.BuildIcon(levels[i], out handle))
+                    using (var ico = TrayIcon.BuildIcon(levels[i], levels[(i + 2) % levels.Length], out handle))
                     using (var src = ico.ToBitmap())
                     {
                         g.DrawImage(src, pad + i * (cell + pad), pad, cell, cell);

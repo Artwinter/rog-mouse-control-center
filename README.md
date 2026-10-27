@@ -37,7 +37,8 @@ fullscreen game is running — so it never competes with the pointer for its own
 - **Polling rate** — 125 / 250 / 500 / 1000 Hz
 - **Debounce** — 4–32 ms
 - **Angle snapping** — on/off
-- **Battery** — percentage ring in the tray icon, live while the window is open
+- **Dual battery tray icon** — the outer red ring is the ROG mouse, the inner green ring is the
+  Razer headset; tooltip and menu show both values
 - **Instant apply** — every change is written to the mouse and saved to firmware, no "Save" button
 - **Launch at logon** — in-app switch and tray menu item, per-user HKCU Run key, no admin rights;
   logon starts silently in the tray, while a manual launch still opens the window
@@ -61,8 +62,8 @@ Download the exe from [Releases](../../releases) and run it. No installation.
 | "常用" row | Sets the current stage to 400/800/1600/2400/3200 |
 | Polling rate / debounce / angle snapping | Applied and saved immediately |
 | Close button / ESC | Hides to tray; the program stops touching the device completely |
-| Tray icon | Battery ring: green ≥50%, yellow ≥20%, red below; tooltip shows detail |
-| Tray right-click | Show window / Re-read / **Launch at logon** / Quit |
+| Tray icon | Dual ring: outer red = mouse, inner green = headset; tooltip shows both levels |
+| Tray right-click | Show window / Open mouse or headset page / Re-read both devices / **Launch at logon** / Quit |
 | "托盘诊断" button | Writes tray registration status and icon coordinates to the footer and `tray.log` |
 | `耳机` tab | Read-only BlackShark V2 Pro 2.4 GHz battery and charging-path status |
 

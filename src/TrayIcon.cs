@@ -17,6 +17,19 @@ namespace RogMouse
     /// </summary>
     public sealed class TrayIcon : IDisposable
     {
+        private sealed class TacticalColorTable : WinForms.ProfessionalColorTable
+        {
+            public override Color MenuItemSelected { get { return Color.FromArgb(40, 255, 255, 255); } }
+            public override Color MenuItemBorder { get { return Color.FromArgb(41, 48, 50); } }
+            public override Color MenuBorder { get { return Color.FromArgb(41, 48, 50); } }
+            public override Color ToolStripDropDownBackground { get { return Color.FromArgb(16, 20, 21); } }
+            public override Color ImageMarginGradientBegin { get { return Color.FromArgb(16, 20, 21); } }
+            public override Color ImageMarginGradientMiddle { get { return Color.FromArgb(16, 20, 21); } }
+            public override Color ImageMarginGradientEnd { get { return Color.FromArgb(16, 20, 21); } }
+            public override Color SeparatorDark { get { return Color.FromArgb(41, 48, 50); } }
+            public override Color SeparatorLight { get { return Color.FromArgb(23, 26, 27); } }
+        }
+
         private const int WM_APP = 0x8000;
         private const int WM_TRAYICON = WM_APP + 1;
         private const int WM_LBUTTONUP = 0x0202;
@@ -117,8 +130,10 @@ namespace RogMouse
         private readonly Window _win;
         private readonly Action _refresh;
         private readonly Action _quit;
+        private readonly Action<bool> _showDevice;
         private readonly WinForms.ContextMenuStrip _menu;
-        private readonly WinForms.ToolStripMenuItem _statusItem;
+        private readonly WinForms.ToolStripLabel _mouseStatusItem;
+        private readonly WinForms.ToolStripLabel _headsetStatusItem;
         private readonly uint _taskbarCreated;
         private readonly WinForms.ToolStripMenuItem _autostartItem;
 
@@ -150,27 +165,53 @@ namespace RogMouse
         private System.Windows.Threading.DispatcherTimer _retry;
         private int _attempts;
 
-        public TrayIcon(Window win, Action refresh, Action quit)
+        public TrayIcon(Window win, Action refresh, Action quit, Action<bool> showDevice)
         {
             _win = win;
             _refresh = refresh;
             _quit = quit;
+            _showDevice = showDevice;
 
             _menu = new WinForms.ContextMenuStrip();
             _menu.ShowImageMargin = false;
-            _menu.BackColor = Color.FromArgb(24, 24, 30);
-            _menu.ForeColor = Color.FromArgb(242, 242, 245);
+            _menu.BackColor = Color.FromArgb(11, 15, 16);
+            _menu.ForeColor = Color.FromArgb(242, 240, 234);
+            _menu.Font = new Font("Microsoft YaHei UI", 9f);
+            _menu.Padding = new WinForms.Padding(0, 5, 0, 5);
+            _menu.Renderer = new WinForms.ToolStripProfessionalRenderer(new TacticalColorTable());
 
-            _statusItem = new WinForms.ToolStripMenuItem("正在读取电量…");
-            _statusItem.Enabled = false;
-            _menu.Items.Add(_statusItem);
+            var header = new WinForms.ToolStripLabel("DEVICE TELEMETRY");
+            header.Font = new Font("Bahnschrift", 8f);
+            header.ForeColor = Color.FromArgb(137, 147, 143);
+            header.Padding = new WinForms.Padding(12, 2, 0, 3);
+            _menu.Items.Add(header);
+
+            _mouseStatusItem = new WinForms.ToolStripLabel("● 月刃 · 正在读取…");
+            _mouseStatusItem.Font = new Font("Microsoft YaHei UI", 9f);
+            _mouseStatusItem.ForeColor = Color.FromArgb(255, 70, 85);
+            _mouseStatusItem.Padding = new WinForms.Padding(12, 1, 0, 1);
+            _menu.Items.Add(_mouseStatusItem);
+
+            _headsetStatusItem = new WinForms.ToolStripLabel("● 黑鲨 · 正在读取…");
+            _headsetStatusItem.Font = new Font("Microsoft YaHei UI", 9f);
+            _headsetStatusItem.ForeColor = Color.FromArgb(121, 255, 90);
+            _headsetStatusItem.Padding = new WinForms.Padding(12, 1, 0, 1);
+            _menu.Items.Add(_headsetStatusItem);
             _menu.Items.Add(new WinForms.ToolStripSeparator());
 
             var show = new WinForms.ToolStripMenuItem("显示主窗口");
             show.Click += delegate { ShowWindow(); };
             _menu.Items.Add(show);
 
-            var reread = new WinForms.ToolStripMenuItem("重新读取");
+            var showMouse = new WinForms.ToolStripMenuItem("打开鼠标控制页");
+            showMouse.Click += delegate { ShowDevice(false); };
+            _menu.Items.Add(showMouse);
+
+            var showHeadset = new WinForms.ToolStripMenuItem("打开耳机电量页");
+            showHeadset.Click += delegate { ShowDevice(true); };
+            _menu.Items.Add(showHeadset);
+
+            var reread = new WinForms.ToolStripMenuItem("重新读取两台设备");
             reread.Click += delegate { if (_refresh != null) _refresh(); };
             _menu.Items.Add(reread);
 
@@ -211,6 +252,12 @@ namespace RogMouse
             };
         }
 
+        private void ShowDevice(bool headset)
+        {
+            ShowWindow();
+            if (_showDevice != null) _showDevice(headset);
+        }
+
         private void Attach()
         {
             Log("Attach: hwnd=0x" + _hwnd.ToInt64().ToString("X") + " pid=" + System.Diagnostics.Process.GetCurrentProcess().Id
@@ -220,7 +267,7 @@ namespace RogMouse
             if (_source != null) _source.AddHook(WndProc);
 
             IntPtr handle;
-            Icon initial = BuildIcon(-1, out handle);
+            Icon initial = BuildIcon(-1, -1, out handle);
             _iconHandle = handle;
             if (!AddIcon(handle, "ROG 月刃 控制中心")) StartRetry();
         }
@@ -501,27 +548,39 @@ namespace RogMouse
         public event Action RegisteredChanged;
 
         private string _lastTip = "";
-        private int _lastPercent = int.MinValue;
-        private string _lastTransport;
+        private int _lastMousePercent = int.MinValue;
+        private int _lastHeadsetPercent = int.MinValue;
+        private bool _lastHeadsetPowerKnown;
+        private bool _lastHeadsetExternalPower;
 
-        public void Update(int percent, string transport)
+        public void Update(int mousePercent, string transport, int headsetPercent,
+            bool headsetPowerKnown, bool headsetExternalPower)
         {
             if (_disposed) return;
             // Same-level refresh (including the five-minute keep-alive) only touches the
             // tooltip/menu text. Do not rebuild the GDI icon when its pixels cannot change.
-            bool sameIcon = percent == _lastPercent;
-            if (sameIcon && string.Equals(transport, _lastTransport, StringComparison.Ordinal)) return;
-            _lastPercent = percent;
-            _lastTransport = transport;
+            bool sameIcon = mousePercent == _lastMousePercent
+                && headsetPercent == _lastHeadsetPercent
+                && headsetPowerKnown == _lastHeadsetPowerKnown
+                && headsetExternalPower == _lastHeadsetExternalPower;
+            _lastMousePercent = mousePercent;
+            _lastHeadsetPercent = headsetPercent;
+            _lastHeadsetPowerKnown = headsetPowerKnown;
+            _lastHeadsetExternalPower = headsetExternalPower;
 
-            string body = percent >= 0 ? "电量 " + percent + "%" : "电量未知";
-            string tip = "ROG 月刃 · " + body;
-            if (!string.IsNullOrEmpty(transport) && percent >= 0) tip = "ROG 月刃 · " + transport + " · " + percent + "%";
+            string mouseBody = mousePercent >= 0 ? mousePercent + "%" : "--";
+            string headsetBody = headsetPercent >= 0 ? headsetPercent + "%" : "--";
+            string headsetState = !headsetPowerKnown ? "" : (headsetExternalPower ? " 充电线" : " 电池");
+            string tip = "鼠标 " + mouseBody + (string.IsNullOrEmpty(transport) ? "" : " · " + transport)
+                + "  |  耳机 " + headsetBody + headsetState;
             tip = Truncate(tip);
             _lastTip = tip;
 
-            if (_statusItem != null)
-                _statusItem.Text = percent >= 0 ? (body + "  " + (transport == null ? "" : transport)) : "电量未知";
+            if (_mouseStatusItem != null)
+                _mouseStatusItem.Text = "● 月刃  " + mouseBody
+                    + (string.IsNullOrEmpty(transport) ? "" : "  " + transport);
+            if (_headsetStatusItem != null)
+                _headsetStatusItem.Text = "● 黑鲨  " + headsetBody + headsetState;
 
             if (sameIcon && _registered && _hwnd != IntPtr.Zero)
             {
@@ -534,7 +593,7 @@ namespace RogMouse
             }
 
             IntPtr handle;
-            Icon next = BuildIcon(percent, out handle);
+            Icon next = BuildIcon(mousePercent, headsetPercent, out handle);
             SetIcon(next, handle, tip);
         }
 
@@ -587,7 +646,7 @@ namespace RogMouse
         /// The taskbar bitmap is composited without per-pixel alpha, so a transparent
         /// icon renders as a hollow outline; the tile makes the glyph readable.
         /// </summary>
-        public static Icon BuildIcon(int percent, out IntPtr handle)
+        public static Icon BuildIcon(int mousePercent, int headsetPercent, out IntPtr handle)
         {
             var bmp = new Bitmap(32, 32, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(bmp))
@@ -596,40 +655,33 @@ namespace RogMouse
                 g.Clear(Color.Transparent);
 
                 using (var tile = new SolidBrush(Color.FromArgb(255, 22, 22, 28)))
-                {
                     g.FillEllipse(tile, new RectangleF(0.5f, 0.5f, 31f, 31f));
-                }
 
-                var rect = new RectangleF(6.5f, 6.5f, 19f, 19f);
-                using (var track = new Pen(Color.FromArgb(90, 255, 255, 255), 3f))
-                    g.DrawEllipse(track, rect);
-
-                if (percent >= 0)
-                {
-                    float sweep = Math.Min(percent, 100) * 3.6f;
-                    if (sweep > 0.1f)
-                    {
-                        // A 100% ring is drawn just short of a full circle: DrawArc with a
-                        // 360 degree sweep paints nothing on some GDI+ versions.
-                        if (sweep > 350f) sweep = 350f;
-                        Color c;
-                        if (percent >= 50) c = Color.FromArgb(61, 220, 132);
-                        else if (percent >= 20) c = Color.FromArgb(255, 194, 77);
-                        else c = Color.FromArgb(255, 77, 77);
-
-                        using (var pen = new Pen(c, 3f))
-                        {
-                            pen.StartCap = LineCap.Round;
-                            pen.EndCap = LineCap.Round;
-                            g.DrawArc(pen, rect, -90f, sweep);
-                        }
-                    }
-                }
+                DrawRing(g, new RectangleF(4.5f, 4.5f, 23f, 23f), mousePercent,
+                    Color.FromArgb(255, 70, 85));
+                DrawRing(g, new RectangleF(9.5f, 9.5f, 13f, 13f), headsetPercent,
+                    Color.FromArgb(121, 255, 90));
             }
 
             handle = bmp.GetHicon();
             bmp.Dispose();
             return Icon.FromHandle(handle);
+        }
+
+        private static void DrawRing(Graphics g, RectangleF rect, int percent, Color color)
+        {
+            using (var track = new Pen(Color.FromArgb(70, 255, 255, 255), 3f))
+                g.DrawEllipse(track, rect);
+            if (percent < 0) return;
+            float sweep = Math.Min(percent, 100) * 3.6f;
+            if (sweep <= 0.1f) return;
+            if (sweep > 350f) sweep = 350f;
+            using (var pen = new Pen(color, 3f))
+            {
+                pen.StartCap = LineCap.Round;
+                pen.EndCap = LineCap.Round;
+                g.DrawArc(pen, rect, -90f, sweep);
+            }
         }
 
         /// <summary>Frees a handle handed out by BuildIcon once its Icon is disposed.</summary>
