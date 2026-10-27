@@ -35,6 +35,7 @@ namespace RogMouse.Tests
             Run("HeadsetPageStaleReading", HeadsetPageStaleReading, ref passed, ref failed);
             Run("FreshReadingReplacesExpiredValue", FreshReadingReplacesExpiredValue, ref passed, ref failed);
             Run("WindowFitStaysInsideWorkArea", WindowFitStaysInsideWorkArea, ref passed, ref failed);
+            Run("HeadsetTransactionHasBoundedRetryAndRemoteOff", HeadsetTransactionHasBoundedRetryAndRemoteOff, ref passed, ref failed);
             Console.WriteLine("RESULT: " + (failed == 0 ? passed + " passed" : failed + " failed, " + passed + " passed"));
             return failed == 0 ? 0 : 1;
         }
@@ -185,6 +186,17 @@ namespace RogMouse.Tests
             if (w > 1350 || h > 712) throw new Exception("window exceeds 1366x728 work area");
             WindowFit.Calculate(1024, 728, out w, out h);
             if (w > 1008 || h > 712) throw new Exception("window exceeds 1024x728 work area");
+        }
+
+        private static void HeadsetTransactionHasBoundedRetryAndRemoteOff()
+        {
+            var plan = new HeadsetTransactionPlan();
+            Equal(true, plan.Start(), "first pass");
+            Equal(1, plan.Pass, "pass one");
+            Equal(true, plan.NextPass(), "second pass");
+            Equal(2, plan.Pass, "pass two");
+            Equal(false, plan.NextPass(), "retry bounded");
+            Equal(true, plan.MustRemoteOff, "remote off required");
         }
     }
 }

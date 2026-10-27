@@ -29,7 +29,6 @@ namespace RogMouse
     public sealed class RazerHidDevice : IDisposable
     {
         private const int WriteTimeoutMs = 400;
-        private const int QueryAttempts = 2;
         private const int ReplyWindowMs = 1400;
         private const int ReadSliceMs = 40;
 
@@ -276,7 +275,9 @@ namespace RogMouse
                     // Retry once: after USB selective suspend the dongle can consume the first
                     // query while its radio wakes. This second pass still uses the same
                     // read-only command and never opens a second collection.
-                    if (QueryAttempts > 1)
+                    var plan = new HeadsetTransactionPlan();
+                    plan.Start();
+                    if (plan.NextPass())
                     {
                         if (!WriteFrame(RazerBlackSharkProtocol.BuildRemote(true), out error)) return null;
                         Thread.Sleep(35);

@@ -14,6 +14,7 @@ if (-not (Test-Path -LiteralPath $fw)) { throw 'csc.exe not found' }
 $sources = @(
     'src\RazerBlackSharkProtocol.cs',
     'src\NativeMethods.cs',
+    'src\HeadsetTransactionPlan.cs',
     'src\RazerHidDevice.cs',
     'src\HeadsetService.cs',
     'src\HeadsetPageState.cs',
@@ -33,6 +34,7 @@ $probeSources = @(
     'src\RazerBlackSharkProtocol.cs',
     'src\NativeMethods.cs',
     'src\RazerHidDevice.cs',
+    'src\HeadsetTransactionPlan.cs',
     'tests\HeadsetProbe.cs'
 ) | ForEach-Object { Join-Path $root $_ }
 $probeExe = Join-Path $outDir 'HeadsetProbe.exe'
