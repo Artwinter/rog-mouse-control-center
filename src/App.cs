@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace RogMouse
 {
@@ -38,6 +39,7 @@ namespace RogMouse
             {
                 if (args[i] == "--no-poll") NoPoll = true;
                 if (args[i] == "--no-device") NoDevice = true;
+                if (args[i] == "--startup") Startup = true;
             }
 
             // Single instance: a second launch must not fork another poller onto the
@@ -67,8 +69,26 @@ namespace RogMouse
             }
 
             app.MainWindow = win;
+            if (Startup)
+            {
+                // Create the HWND (which registers the tray icon) without ever showing the
+                // layered window. Showing and hiding it would allocate a full-screen render
+                // surface just to park the app.
+                win.ShowInTaskbar = false;
+                win.WindowStartupLocation = WindowStartupLocation.Manual;
+                win.Left = -32000;
+                win.Top = -32000;
+                new System.Windows.Interop.WindowInteropHelper(win).EnsureHandle();
+                win.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(delegate
+                {
+                    if (Controller != null) Controller.HideForStartup();
+                }));
+            }
             StartShowWindowWatcher(win);
-            app.Run(win);
+            // Run(Window) calls Show() itself. The startup path owns a hidden HWND and
+            // needs the dispatcher loop without changing that visibility.
+            if (Startup) app.Run();
+            else app.Run(win);
         }
 
         private static System.Threading.Mutex _instanceMutex;
@@ -149,6 +169,9 @@ namespace RogMouse
         /// </summary>
         public static bool NoDevice;
 
+        /// <summary>Set by --startup: create the window and tray, but keep the window hidden.</summary>
+        public static bool Startup;
+
         /// <summary>窗口/任务栏图标直接复用 exe 自带的 win32 图标，不再额外内嵌一份。</summary>
         private static ImageSource LoadAppIcon()
         {
@@ -179,6 +202,9 @@ namespace RogMouse
                 bmp.BeginInit();
                 bmp.StreamSource = stream;
                 bmp.CacheOption = BitmapCacheOption.OnLoad;
+                // The card displays the shot at 274x148; decode for that size instead of
+                // retaining the 1272x592 source pixels for the lifetime of the process.
+                bmp.DecodePixelWidth = 548;
                 bmp.EndInit();
                 bmp.Freeze();
                 host.Source = bmp;
