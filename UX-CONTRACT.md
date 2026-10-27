@@ -5,6 +5,8 @@
 - The persistent left device rail owns navigation between `鼠标` and `耳机`.
 - The active device is visually marked by a signal bar, raised surface, and `Tag=on`.
 - The rail remains visible on both device pages; a page can never cover navigation.
+- Global app settings live in the rail footer. `开机自启动` is owned there, not inside either
+  device page.
 - Clicking the active device re-reads only when the page is already selected and the action is
   explicitly requested; selecting a different device switches the visible workspace immediately.
 

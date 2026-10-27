@@ -453,21 +453,21 @@
 
               <Border Grid.Row="4" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,15,0,0">
                 <StackPanel>
-                  <TextBlock Text="POWER CELL / ROG" Style="{StaticResource UtilityLabel}" Margin="0,0,0,10"/>
-                  <Grid Width="88" Height="88" HorizontalAlignment="Left">
-                    <Ellipse Width="88" Height="88" Stroke="#20FFFFFF" StrokeThickness="7"/>
-                    <Path x:Name="BatteryArc" StrokeThickness="7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                          Stroke="{StaticResource SignalRed}"/>
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                      <TextBlock x:Name="BatteryValue" Text="--" FontFamily="Bahnschrift" FontSize="24" FontWeight="Light"
-                                 Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Center"/>
-                      <TextBlock Text="BATTERY %" FontFamily="Bahnschrift" FontSize="7" Foreground="{StaticResource TextTertiary}"
-                                 HorizontalAlignment="Center" Margin="0,-2,0,0"/>
+                  <TextBlock Text="GLOBAL / STARTUP" Style="{StaticResource UtilityLabel}" Margin="0,0,0,10"/>
+                  <Grid>
+                    <StackPanel>
+                      <TextBlock Text="开机自启动" FontSize="12" Foreground="{StaticResource TextPrimary}"/>
+                      <TextBlock Text="登录 Windows 后静默运行" FontSize="9.5" Foreground="{StaticResource TextTertiary}" Margin="0,5,0,0"/>
                     </StackPanel>
+                    <ToggleButton x:Name="AutostartToggle" Style="{StaticResource TacticalToggle}"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center"/>
                   </Grid>
-                  <TextBlock x:Name="BatteryHint" Text="正在读取…" FontSize="10" Foreground="{StaticResource TextSecondary}" Margin="0,8,0,0"/>
-                  <TextBlock Text="READ ONLY / SERVICE LOOP" FontFamily="Bahnschrift" FontSize="8" Foreground="{StaticResource TextTertiary}" Margin="0,16,0,0"/>
-                  <TextBlock Text="每次查询后释放 HID 句柄" FontSize="10" Foreground="{StaticResource TextTertiary}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                  <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Margin="0,16,0,0" Padding="0,12,0,0">
+                    <StackPanel>
+                      <TextBlock Text="READ ONLY / SERVICE LOOP" FontFamily="Bahnschrift" FontSize="8" Foreground="{StaticResource TextTertiary}"/>
+                      <TextBlock Text="每次查询后释放 HID 句柄" FontSize="10" Foreground="{StaticResource TextTertiary}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                  </Border>
                 </StackPanel>
               </Border>
             </Grid>
@@ -491,8 +491,30 @@
                     <TextBlock x:Name="ConnText" Text="2.4 GHz 接收器" FontSize="10.5" Foreground="{StaticResource TextSecondary}" Margin="8,0,0,0"/>
                   </StackPanel>
                 </StackPanel>
-                <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="#0DFF4655" BorderBrush="#4DFF4655" BorderThickness="1" Padding="10,7">
-                  <TextBlock Text="● LIVE TELEMETRY" FontFamily="Bahnschrift" FontSize="8" Foreground="{StaticResource SignalRed}"/>
+                <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="#0CFFFFFF"
+                        BorderBrush="{StaticResource Line}" BorderThickness="1" Padding="10,8">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="88"/>
+                      <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid Width="88" Height="88">
+                      <Ellipse Width="88" Height="88" Stroke="#20FFFFFF" StrokeThickness="7"/>
+                      <Path x:Name="BatteryArc" StrokeThickness="7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                            Stroke="{StaticResource SignalRed}"/>
+                      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock x:Name="BatteryValue" Text="--" FontFamily="Bahnschrift" FontSize="24" FontWeight="Light"
+                                   Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="BATTERY %" FontFamily="Bahnschrift" FontSize="7" Foreground="{StaticResource TextTertiary}"
+                                   HorizontalAlignment="Center" Margin="0,-2,0,0"/>
+                      </StackPanel>
+                    </Grid>
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" MinWidth="106">
+                      <TextBlock Text="POWER CELL / ROG" Style="{StaticResource UtilityLabel}"/>
+                      <TextBlock x:Name="BatteryHint" Text="正在读取…" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,7,0,0"/>
+                      <TextBlock Text="LIVE / 60 SEC" FontFamily="Bahnschrift" FontSize="8" Foreground="{StaticResource SignalRed}" Margin="0,6,0,0"/>
+                    </StackPanel>
+                  </Grid>
                 </Border>
               </Grid>
 
@@ -593,8 +615,8 @@
                       <RowDefinition Height="Auto"/>
                       <RowDefinition Height="Auto"/>
                       <RowDefinition Height="Auto"/>
-                      <RowDefinition Height="Auto"/>
                       <RowDefinition Height="*"/>
+                      <RowDefinition Height="Auto"/>
                       <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0">
@@ -609,26 +631,19 @@
                       </StackPanel>
                       <StackPanel x:Name="RatePanel" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                     </Grid>
-                    <Grid Grid.Row="2" Margin="0,16,0,0">
+                    <StackPanel Grid.Row="2" Margin="0,16,0,0">
                       <StackPanel>
                         <TextBlock Text="按键响应 / MS" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                         <TextBlock Text="数值越大越不易误触" FontSize="9.5" Foreground="{StaticResource TextTertiary}" Margin="0,4,0,0"/>
                       </StackPanel>
-                      <StackPanel x:Name="DebouncePanel" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                    </Grid>
+                      <StackPanel x:Name="DebouncePanel" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+                    </StackPanel>
                     <Grid Grid.Row="3" Margin="0,16,0,0">
                       <StackPanel>
                         <TextBlock Text="直线修正" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                         <TextBlock Text="轨迹更接近水平或垂直" FontSize="9.5" Foreground="{StaticResource TextTertiary}" Margin="0,4,0,0"/>
                       </StackPanel>
                       <ToggleButton x:Name="SnapToggle" Style="{StaticResource TacticalToggle}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                    </Grid>
-                    <Grid Grid.Row="4" Margin="0,16,0,0">
-                      <StackPanel>
-                        <TextBlock Text="开机自启动" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
-                        <TextBlock Text="登录 Windows 后静默运行" FontSize="9.5" Foreground="{StaticResource TextTertiary}" Margin="0,4,0,0"/>
-                      </StackPanel>
-                      <ToggleButton x:Name="AutostartToggle" Style="{StaticResource TacticalToggle}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                     </Grid>
                     <Border Grid.Row="5" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Margin="0,18,0,0" Padding="0,12,0,0">
                       <StackPanel>

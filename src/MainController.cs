@@ -1217,8 +1217,8 @@ namespace RogMouse
         /// <summary>Draws the battery ring; percent &lt; 0 renders just the track.</summary>
         private void DrawBattery(int percent)
         {
-            double size = 128;
-            double stroke = 9;
+            double size = 88;
+            double stroke = 7;
             double radius = (size - stroke) / 2 - 1;
             var center = new Point(size / 2, size / 2);
 

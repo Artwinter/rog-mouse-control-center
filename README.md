@@ -10,7 +10,8 @@ receiver** (`1532:0555`). That page reads the level and the receiver's charging-
 not configure EQ, microphone, THX, lighting, or firmware. Bluetooth is not used.
 
 The redesigned shell uses a persistent device rail for `鼠标` and `耳机`, with the ROG mouse in
-signal red and the Razer headset in signal green.
+signal red and the Razer headset in signal green. Mouse battery telemetry stays inside the mouse
+workspace; global launch-at-logon lives in the rail footer.
 
 Windows 10/11 · .NET Framework 4.x (preinstalled) · x86 single file · ~600 KB
 
