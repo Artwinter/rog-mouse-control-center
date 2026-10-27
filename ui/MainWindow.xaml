@@ -660,11 +660,11 @@
                     </Grid>
                     </StackPanel>
                   </StackPanel>
-                  <StackPanel Grid.Column="1"><TextBlock Text="CURRENT STAGE" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecPreset" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
-                  <StackPanel Grid.Column="2"><TextBlock Text="POLLING" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecRate" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
-                  <StackPanel Grid.Column="3"><TextBlock Text="DEBOUNCE" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecDebounce" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
-                  <StackPanel Grid.Column="4"><TextBlock Text="TRANSPORT" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecConn" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
-                  <StackPanel Grid.Column="5"><TextBlock Text="SUPPLY" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecCharge" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="CURRENT STAGE" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecPreset" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
+                  <StackPanel Grid.Column="2" VerticalAlignment="Center"><TextBlock Text="POLLING" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecRate" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
+                  <StackPanel Grid.Column="3" VerticalAlignment="Center"><TextBlock Text="DEBOUNCE" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecDebounce" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
+                  <StackPanel Grid.Column="4" VerticalAlignment="Center"><TextBlock Text="TRANSPORT" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecConn" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
+                  <StackPanel Grid.Column="5" VerticalAlignment="Center"><TextBlock Text="SUPPLY" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecCharge" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
                 </Grid>
               </Border>
             </Grid>
