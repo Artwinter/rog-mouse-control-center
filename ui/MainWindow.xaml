@@ -491,31 +491,11 @@
                     <TextBlock x:Name="ConnText" Text="2.4 GHz 接收器" FontSize="10.5" Foreground="{StaticResource TextSecondary}" Margin="8,0,0,0"/>
                   </StackPanel>
                 </StackPanel>
-                <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="#0CFFFFFF"
-                        BorderBrush="{StaticResource Line}" BorderThickness="1" Padding="10,8">
-                  <Grid>
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="88"/>
-                      <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid Width="88" Height="88">
-                      <Ellipse Width="88" Height="88" Stroke="#20FFFFFF" StrokeThickness="7"/>
-                      <Path x:Name="BatteryArc" StrokeThickness="7" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                            Stroke="{StaticResource SignalRed}"/>
-                      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock x:Name="BatteryValue" Text="--" FontFamily="Bahnschrift" FontSize="24" FontWeight="Light"
-                                   Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Center"/>
-                        <TextBlock Text="BATTERY %" FontFamily="Bahnschrift" FontSize="7" Foreground="{StaticResource TextTertiary}"
-                                   HorizontalAlignment="Center" Margin="0,-2,0,0"/>
-                      </StackPanel>
-                    </Grid>
-                    <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" MinWidth="106">
-                      <TextBlock Text="POWER CELL / ROG" Style="{StaticResource UtilityLabel}"/>
-                      <TextBlock x:Name="BatteryHint" Text="正在读取…" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,7,0,0"/>
-                      <TextBlock Text="LIVE / 60 SEC" FontFamily="Bahnschrift" FontSize="8" Foreground="{StaticResource SignalRed}" Margin="0,6,0,0"/>
-                    </StackPanel>
-                  </Grid>
-                </Border>
+                <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top">
+                  <TextBlock Text="DEVICE 01 / ONLINE" Style="{StaticResource UtilityLabel}" HorizontalAlignment="Right"/>
+                  <TextBlock Text="2.4 GHZ / READY" FontFamily="Bahnschrift" FontSize="9"
+                             Foreground="{StaticResource SignalGreen}" HorizontalAlignment="Right" Margin="0,6,0,0"/>
+                </StackPanel>
               </Grid>
 
               <Grid Grid.Row="1">
@@ -658,17 +638,29 @@
               <Border Grid.Row="2" Style="{StaticResource InstrumentPanel}" Margin="0,14,0,0" Padding="14,10">
                 <Grid>
                   <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.55*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
-                  <StackPanel Grid.Column="0"><TextBlock Text="CURRENT STAGE" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecPreset" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
-                  <StackPanel Grid.Column="1"><TextBlock Text="POLLING" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecRate" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
-                  <StackPanel Grid.Column="2"><TextBlock Text="DEBOUNCE" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecDebounce" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
-                  <StackPanel Grid.Column="3"><TextBlock Text="TRANSPORT" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecConn" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
-                  <StackPanel Grid.Column="4"><TextBlock Text="POWER" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecCharge" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
+                  <StackPanel Grid.Column="0">
+                    <TextBlock Text="POWER CELL / ROG" Style="{StaticResource UtilityLabel}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                      <TextBlock x:Name="BatteryValue" Text="--" FontFamily="Bahnschrift" FontSize="20" FontWeight="Light" Foreground="{StaticResource TextPrimary}"/>
+                      <TextBlock Text="%" FontFamily="Bahnschrift" FontSize="10" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Bottom" Margin="2,0,0,2"/>
+                      <TextBlock x:Name="BatteryHint" Text="正在读取…" FontSize="9.5" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Bottom" Margin="10,0,0,2"/>
+                    </StackPanel>
+                    <Border Width="120" Height="4" Background="#20FFFFFF" Margin="0,5,0,0" HorizontalAlignment="Left">
+                      <Border x:Name="BatteryFill" Width="0" Background="{StaticResource MouseGradient}" HorizontalAlignment="Left"/>
+                    </Border>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1"><TextBlock Text="CURRENT STAGE" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecPreset" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
+                  <StackPanel Grid.Column="2"><TextBlock Text="POLLING" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecRate" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
+                  <StackPanel Grid.Column="3"><TextBlock Text="DEBOUNCE" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecDebounce" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
+                  <StackPanel Grid.Column="4"><TextBlock Text="TRANSPORT" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecConn" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
+                  <StackPanel Grid.Column="5"><TextBlock Text="SUPPLY" Style="{StaticResource UtilityLabel}"/><TextBlock x:Name="SpecCharge" Text="--" FontSize="11" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/></StackPanel>
                 </Grid>
               </Border>
             </Grid>

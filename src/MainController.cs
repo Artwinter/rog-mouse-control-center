@@ -7,7 +7,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Shapes;
 
 namespace RogMouse
 {
@@ -28,7 +27,7 @@ namespace RogMouse
         private TextBlock _dpiValue;
         private TextBlock _batteryValue;
         private TextBlock _batteryHint;
-        private Path _batteryArc;
+        private Border _batteryFill;
         private Panel _stagePanel;
         private Panel _ratePanel;
         private Panel _debouncePanel;
@@ -73,7 +72,7 @@ namespace RogMouse
             _dpiValue = (TextBlock)_win.FindName("DpiValue");
             _batteryValue = (TextBlock)_win.FindName("BatteryValue");
             _batteryHint = (TextBlock)_win.FindName("BatteryHint");
-            _batteryArc = (Path)_win.FindName("BatteryArc");
+            _batteryFill = (Border)_win.FindName("BatteryFill");
             _stagePanel = (Panel)_win.FindName("StagePanel");
             _ratePanel = (Panel)_win.FindName("RatePanel");
             _debouncePanel = (Panel)_win.FindName("DebouncePanel");
@@ -1214,55 +1213,21 @@ namespace RogMouse
             return "请尽快充电";
         }
 
-        /// <summary>Draws the battery ring; percent &lt; 0 renders just the track.</summary>
+        /// <summary>Fills the compact telemetry bar; percent &lt; 0 leaves the track empty.</summary>
         private void DrawBattery(int percent)
         {
-            double size = 88;
-            double stroke = 7;
-            double radius = (size - stroke) / 2 - 1;
-            var center = new Point(size / 2, size / 2);
-
-            Color from = (Color)ColorConverter.ConvertFromString(percent >= 0 && percent < 20 ? "#FF4D4D" : "#FF2D55");
-            Color to = (Color)ColorConverter.ConvertFromString(percent >= 0 && percent < 20 ? "#FF7A3D" : "#FF7A3D");
-            _batteryArc.Stroke = new LinearGradientBrush(from, to, 45);
-
+            if (_batteryFill == null) return;
             if (percent < 0)
             {
-                _batteryArc.Data = Geometry.Empty;
+                _batteryFill.Width = 0;
+                _batteryFill.Background = Brushes.Transparent;
                 return;
             }
-            if (percent == 0) { _batteryArc.Data = Geometry.Empty; return; }
 
-            double sweep = 360.0 * Math.Min(percent, 100) / 100.0;
-            if (sweep > 359.9) sweep = 359.9;
-
-            double start = -90;
-            var p1 = PointOn(center, radius, start);
-            var p2 = PointOn(center, radius, start + sweep);
-
-            var fig = new PathFigure();
-            fig.StartPoint = p1;
-            fig.IsClosed = false;
-            var arc = new ArcSegment();
-            arc.Point = p2;
-            arc.Size = new Size(radius, radius);
-            arc.SweepDirection = SweepDirection.Clockwise;
-            arc.IsLargeArc = sweep > 180;
-            fig.Segments.Add(arc);
-
-            var geo = new PathGeometry();
-            geo.Figures.Add(fig);
-            _batteryArc.Data = geo;
-
-            // Animate the ring in from empty.
-            _batteryArc.BeginAnimation(Path.OpacityProperty, null);
-            _batteryArc.Opacity = 1;
-        }
-
-        private static Point PointOn(Point c, double r, double deg)
-        {
-            double rad = deg * Math.PI / 180.0;
-            return new Point(c.X + r * Math.Cos(rad), c.Y + r * Math.Sin(rad));
+            _batteryFill.Width = 120.0 * Math.Min(percent, 100) / 100.0;
+            Color from = (Color)ColorConverter.ConvertFromString(percent < 20 ? "#FF4D4D" : "#FF2D55");
+            Color to = (Color)ColorConverter.ConvertFromString("#FF7A3D");
+            _batteryFill.Background = new LinearGradientBrush(from, to, 0);
         }
     }
 }
