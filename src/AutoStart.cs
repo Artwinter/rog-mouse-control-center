@@ -13,12 +13,19 @@ namespace RogMouse
     {
         private const string RunKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
         private const string ValueName = "ROGMouseControlCenter";
+        private const string StartupArgument = " --startup";
 
         /// <summary>Path written into the Run key; the app entry assembly, not the host exe of a shortcut.</summary>
         private static string ExePath()
         {
             try { return System.Reflection.Assembly.GetEntryAssembly().Location; }
             catch { return System.Reflection.Assembly.GetExecutingAssembly().Location; }
+        }
+
+        /// <summary>Command line used only by the logon entry; manual launches stay visible.</summary>
+        private static string RunCommand()
+        {
+            return '"' + ExePath() + '"' + StartupArgument;
         }
 
         /// <summary>True when the Run value exists and still points at this exe.</summary>
@@ -30,7 +37,24 @@ namespace RogMouse
                 {
                     if (key == null) return false;
                     string v = key.GetValue(ValueName, null) as string;
-                    return v != null && v.IndexOf(ExePath(), StringComparison.OrdinalIgnoreCase) >= 0;
+                    return string.Equals(v, RunCommand(), StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch { return false; }
+        }
+
+        /// <summary>True when the Run value targets this exe but predates silent startup.</summary>
+        public static bool NeedsUpgrade()
+        {
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(RunKey, false))
+                {
+                    if (key == null) return false;
+                    string v = key.GetValue(ValueName, null) as string;
+                    return v != null
+                        && v.IndexOf(ExePath(), StringComparison.OrdinalIgnoreCase) >= 0
+                        && !string.Equals(v, RunCommand(), StringComparison.OrdinalIgnoreCase);
                 }
             }
             catch { return false; }
@@ -59,7 +83,7 @@ namespace RogMouse
                 using (var key = Registry.CurrentUser.CreateSubKey(RunKey))
                 {
                     if (key == null) return "无法打开注册表 Run 键";
-                    key.SetValue(ValueName, '"' + ExePath() + '"', RegistryValueKind.String);
+                    key.SetValue(ValueName, RunCommand(), RegistryValueKind.String);
                     return null;
                 }
             }
