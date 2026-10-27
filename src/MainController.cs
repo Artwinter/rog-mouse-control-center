@@ -45,6 +45,8 @@ namespace RogMouse
         private System.Windows.Threading.DispatcherTimer _autoSave;
 
         private TrayIcon _tray;
+        private HeadsetController _headset;
+        private HeadsetService _headsetService;
         private bool _trayFailed;
         private ConnectionInfo _conn;
         private System.Windows.Threading.DispatcherTimer _poll;
@@ -96,6 +98,7 @@ namespace RogMouse
             _autoSave.Tick += delegate { OnAutoSaveTick(); };
 
             HookChrome();
+            HookDeviceTabs();
             HookDpi();
             HookExtras();
             BuildChips();
@@ -107,6 +110,9 @@ namespace RogMouse
             HookAutostart();
 
             _win.Loaded += delegate { BeginRefresh(); };
+            _headsetService = HeadsetService.CreateDefault();
+            _headset = new HeadsetController(_win, _headsetService);
+            _headset.Initialize();
 
             // The offscreen renderer builds this same tree just to grab a PNG; a tray icon
             // and a polling timer would outlive that process for no reason.
@@ -187,6 +193,46 @@ namespace RogMouse
 
             var btnTrayDiag = (Button)_win.FindName("BtnTrayDiag");
             if (btnTrayDiag != null) btnTrayDiag.Click += delegate { ShowTrayDiagnostics(); };
+        }
+
+        private void HookDeviceTabs()
+        {
+            var tabMouse = (Button)_win.FindName("TabMouse");
+            var tabHeadset = (Button)_win.FindName("TabHeadset");
+            var mousePage = (Grid)_win.FindName("MousePage");
+            var headsetPage = (Border)_win.FindName("HeadsetPage");
+            if (tabMouse == null || tabHeadset == null || mousePage == null || headsetPage == null) return;
+
+            tabMouse.Click += delegate
+            {
+                SwitchDevice(false, true);
+            };
+            tabHeadset.Click += delegate
+            {
+                SwitchDevice(true, true);
+            };
+        }
+
+        private void SwitchDevice(bool headset, bool startRead)
+        {
+            var tabMouse = (Button)_win.FindName("TabMouse");
+            var tabHeadset = (Button)_win.FindName("TabHeadset");
+            var mousePage = (Grid)_win.FindName("MousePage");
+            var headsetPage = (Border)_win.FindName("HeadsetPage");
+            tabMouse.Tag = headset ? "off" : "on";
+            tabHeadset.Tag = headset ? "on" : "off";
+            mousePage.Visibility = headset ? Visibility.Collapsed : Visibility.Visible;
+            headsetPage.Visibility = headset ? Visibility.Visible : Visibility.Collapsed;
+            if (_headset != null && startRead) _headset.SelectPage(headset);
+        }
+
+        /// <summary>Offscreen screenshot hook: use the same tab switch, then show one real reading.</summary>
+        public void ShowHeadsetPageForPreview()
+        {
+            if (_headset == null) return;
+            SwitchDevice(true, false);
+            var reading = _headsetService != null ? _headsetService.ReadOnce() : null;
+            _headset.Preview(reading);
         }
 
         /// <summary>
@@ -572,6 +618,7 @@ namespace RogMouse
         {
             if (ShouldSuspend) SuspendDevice();
             else ResumeDevice();
+            if (_headset != null) _headset.SyncAccess(ShouldSuspend);
         }
 
         /// <summary>True between a suspension and the next resume; keeps the first resume from re-reading.</summary>

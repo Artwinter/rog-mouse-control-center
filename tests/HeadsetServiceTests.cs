@@ -30,6 +30,9 @@ namespace RogMouse.Tests
             Run("MissingChargingReplyIsUnknown", MissingChargingReplyIsUnknown, ref passed, ref failed);
             Run("MalformedBatteryIsInvalid", MalformedBatteryIsInvalid, ref passed, ref failed);
             Run("ReceiverOpenErrorIsReported", ReceiverOpenErrorIsReported, ref passed, ref failed);
+            Run("HeadsetPagePollingGate", HeadsetPagePollingGate, ref passed, ref failed);
+            Run("HeadsetPageStateText", HeadsetPageStateText, ref passed, ref failed);
+            Run("HeadsetPageStaleReading", HeadsetPageStaleReading, ref passed, ref failed);
             Console.WriteLine("RESULT: " + (failed == 0 ? passed + " passed" : failed + " failed, " + passed + " passed"));
             return failed == 0 ? 0 : 1;
         }
@@ -123,6 +126,37 @@ namespace RogMouse.Tests
             var r = service.ReadOnce();
             Equal(HeadsetStatus.OpenFailed, r.Status, "status");
             if (r.Error == null || r.Error.IndexOf("Win32 5") < 0) throw new Exception("Win32 error lost");
+        }
+
+        private static void HeadsetPagePollingGate()
+        {
+            Equal(true, HeadsetPageState.CanPoll(true, true, false, false), "visible selected");
+            Equal(false, HeadsetPageState.CanPoll(false, true, false, false), "mouse page");
+            Equal(false, HeadsetPageState.CanPoll(true, false, false, false), "hidden");
+            Equal(false, HeadsetPageState.CanPoll(true, true, true, false), "minimized");
+            Equal(false, HeadsetPageState.CanPoll(true, true, false, true), "fullscreen");
+        }
+
+        private static void HeadsetPageStateText()
+        {
+            Equal("未检测到 2.4 GHz 接收器",
+                HeadsetPageState.StatusText(HeadsetStatus.ReceiverMissing, false, false), "missing");
+            Equal("接收器在线 · 耳机未响应",
+                HeadsetPageState.StatusText(HeadsetStatus.NoResponse, false, false), "no response");
+            Equal("电池供电", HeadsetPageState.StatusText(HeadsetStatus.Ok, true, false), "on battery");
+            Equal("已连接充电线", HeadsetPageState.StatusText(HeadsetStatus.Ok, true, true), "external");
+            Equal("充电状态未知", HeadsetPageState.StatusText(HeadsetStatus.Ok, false, false), "unknown");
+        }
+
+        private static void HeadsetPageStaleReading()
+        {
+            var reading = new HeadsetReading();
+            reading.Status = HeadsetStatus.Ok;
+            reading.BatteryPercent = 77;
+            reading.ReadAt = new DateTime(2026, 10, 27, 12, 0, 0);
+            Equal(false, HeadsetPageState.IsStale(reading, reading.ReadAt.AddSeconds(30)), "fresh");
+            Equal(true, HeadsetPageState.IsStale(reading, reading.ReadAt.AddSeconds(91)), "stale");
+            Equal("--", HeadsetPageState.LevelText(reading, reading.ReadAt.AddSeconds(91)), "stale level");
         }
     }
 }

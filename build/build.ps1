@@ -55,7 +55,9 @@ foreach ($r in $refs) {
 
 $src = @(
     'NativeMethods.cs', 'AsusHidDevice.cs', 'AsusProtocol.cs',
-    'Connection.cs', 'AutoStart.cs', 'TrayIcon.cs', 'App.cs', 'MainController.cs'
+    'Connection.cs', 'AutoStart.cs', 'TrayIcon.cs', 'RazerBlackSharkProtocol.cs',
+    'RazerHidDevice.cs', 'HeadsetService.cs', 'HeadsetPageState.cs',
+    'HeadsetController.cs', 'App.cs', 'MainController.cs'
 ) | ForEach-Object { Join-Path $root "src\$_" }
 
 $args = @('/nologo', '/target:winexe', '/platform:x86', '/optimize+', "/out:$Out")

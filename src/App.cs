@@ -25,6 +25,11 @@ namespace RogMouse
                 Shot(args[1], true);
                 return;
             }
+            if (args.Length >= 2 && args[0] == "--shot-headset")
+            {
+                Shot(args[1], true, true);
+                return;
+            }
             // Dev helper: export the tray icons themselves, scaled up for inspection.
             if (args.Length >= 2 && args[0] == "--icon")
             {
@@ -228,6 +233,7 @@ namespace RogMouse
 
             var win = (Window)XamlReader.Parse(xaml);
             win.Icon = LoadAppIcon();
+            FitWindowToWorkArea(win);
             ApplyHeroImage(win);
             var controller = new MainController(win);
             controller.Headless = headless;
@@ -236,6 +242,22 @@ namespace RogMouse
             controller.Initialize();
             Controller = controller;
             return win;
+        }
+
+        /// <summary>
+        /// Keeps the 1120x760 design inside the current desktop. A 1366x768 work area is
+        /// shorter than the design once the taskbar is visible, so fit before first show.
+        /// </summary>
+        public static void FitWindowToWorkArea(Window win)
+        {
+            double maxW = Math.Max(640, SystemParameters.WorkArea.Width - 16);
+            double maxH = Math.Max(560, SystemParameters.WorkArea.Height - 16);
+            double w = Math.Min(1120, maxW);
+            double h = Math.Min(760, maxH);
+            win.Width = Math.Max(940, w);
+            win.Height = Math.Max(650, h);
+            if (win.Width > maxW) win.Width = maxW;
+            if (win.Height > maxH) win.Height = maxH;
         }
 
         /// <summary>Renders the tray icon at a few charge levels into one strip.</summary>
@@ -264,14 +286,18 @@ namespace RogMouse
             Console.WriteLine("saved " + path);
         }
 
-        private static void Shot(string path, bool live)
+        private static void Shot(string path, bool live, bool headset)
         {
             // Build the visual tree without ever showing a window, then render it.
             var win = LoadWindow(true);
             var content = (FrameworkElement)win.Content;
             if (content == null) throw new InvalidOperationException("窗口没有内容");
 
-            if (live) Controller.RefreshSyncForPreview();
+            if (live)
+            {
+                if (headset) Controller.ShowHeadsetPageForPreview();
+                else Controller.RefreshSyncForPreview();
+            }
 
             const int W = 1000, H = 700;
             content.Width = W;
@@ -286,6 +312,11 @@ namespace RogMouse
             encoder.Frames.Add(BitmapFrame.Create(bmp));
             using (var fs = File.Create(path)) encoder.Save(fs);
             Console.WriteLine("saved " + path);
+        }
+
+        private static void Shot(string path, bool live)
+        {
+            Shot(path, live, false);
         }
     }
 }
