@@ -31,6 +31,7 @@ namespace RogMouse
         private const int WriteTimeoutMs = 400;
         private const int QueryAttempts = 2;
         private const int ReplyWindowMs = 1400;
+        private const int ReadSliceMs = 40;
 
         public const ushort RazerVendorId = 0x1532;
         public const ushort BlackSharkV2ProPid = 0x0555;
@@ -206,6 +207,13 @@ namespace RogMouse
             return device;
         }
 
+        private static string Describe(RazerHidInterface item)
+        {
+            return "usage=" + item.UsagePage.ToString("X4") + ":" + item.Usage.ToString("X4")
+                + " in=" + item.InputLength + " out=" + item.OutputLength
+                + " product=" + item.ProductName;
+        }
+
         public string DescribeCollection()
         {
             if (Interface == null) return "";
@@ -235,8 +243,21 @@ namespace RogMouse
 
                 try
                 {
+                    // A previous command's ACK must never satisfy this query. The receiver
+                    // normally has a status report queued, but an idle/off headset may have none;
+                    // this drain is therefore bounded rather than waiting for data.
+                    DrainInput();
                     if (!WriteFrame(RazerBlackSharkProtocol.BuildRemote(true), out error)) return null;
                     Thread.Sleep(35);
+
+                    // Reject anything except the two read-only query commands here as well as in
+                    // the frame builder, so a future call site cannot turn this into a writer.
+                    if (command != RazerBlackSharkProtocol.CommandBattery
+                        && command != RazerBlackSharkProtocol.CommandCharging)
+                    {
+                        error = "不支持的耳机查询命令";
+                        return null;
+                    }
                     if (!WriteFrame(RazerBlackSharkProtocol.BuildQuery(command), out error)) return null;
 
                     long deadline = Environment.TickCount + Math.Max(timeoutMs, ReplyWindowMs);
@@ -245,7 +266,7 @@ namespace RogMouse
                         long left = deadline - Environment.TickCount;
                         if (left <= 0) break;
                         int read;
-                        if (!ReadFrame(Math.Min(40, (int)left), out read, out error)) return null;
+                        if (!ReadFrame(Math.Min(ReadSliceMs, (int)left), out read, out error)) return null;
                         if (read < 4) continue;
                         byte[] payload;
                         if (RazerBlackSharkProtocol.TryReadPayload(_in, command, out payload))
@@ -266,7 +287,7 @@ namespace RogMouse
                             long left = deadline - Environment.TickCount;
                             if (left <= 0) break;
                             int read;
-                            if (!ReadFrame(Math.Min(40, (int)left), out read, out error)) return null;
+                            if (!ReadFrame(Math.Min(ReadSliceMs, (int)left), out read, out error)) return null;
                             if (read < 4) continue;
                             byte[] payload;
                             if (RazerBlackSharkProtocol.TryReadPayload(_in, command, out payload))
@@ -283,6 +304,47 @@ namespace RogMouse
                     string ignored;
                     WriteFrame(RazerBlackSharkProtocol.BuildRemote(false), out ignored);
                 }
+            }
+        }
+
+        private void DrainInput()
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                int read;
+                string ignored;
+                if (!ReadFrame(0, out read, out ignored)) return;
+                if (read <= 0) return;
+            }
+        }
+
+        /// <summary>
+        /// A no-wait read is for queue draining only. If Windows would block, stop draining
+        /// instead of pinning the worker; a queued report on this collection returns at once.
+        /// </summary>
+        private bool ReadImmediate(out int read)
+        {
+            read = 0;
+            IntPtr threadHandle;
+            if (!NativeMethods.DuplicateHandle(NativeMethods.GetCurrentProcess(),
+                    NativeMethods.GetCurrentThread(), NativeMethods.GetCurrentProcess(),
+                    out threadHandle, 0, false, NativeMethods.DUPLICATE_SAME_ACCESS))
+                return false;
+            var watchdog = new Canceller(threadHandle);
+            try
+            {
+                watchdog.Arm(1);
+                if (!NativeMethods.ReadFile(_handle, _in, _in.Length, out read, IntPtr.Zero))
+                {
+                    read = 0;
+                    return true;
+                }
+                return true;
+            }
+            finally
+            {
+                watchdog.Dispose();
+                NativeMethods.CloseHandle(threadHandle);
             }
         }
 
@@ -305,36 +367,46 @@ namespace RogMouse
             error = null;
             if (timeoutMs <= 0)
             {
-                if (!NativeMethods.ReadFile(_handle, _in, _in.Length, out read, IntPtr.Zero))
+                return ReadImmediate(out read);
+            }
+
+            // The receiver is a synchronous HID collection. A direct blocking ReadFile can
+            // wait forever when the headset goes offline, so use the same CancelSynchronousIo
+            // watchdog as the mouse transport around each bounded read.
+            IntPtr threadHandle;
+            if (!NativeMethods.DuplicateHandle(NativeMethods.GetCurrentProcess(),
+                    NativeMethods.GetCurrentThread(), NativeMethods.GetCurrentProcess(),
+                    out threadHandle, 0, false, NativeMethods.DUPLICATE_SAME_ACCESS))
+            {
+                error = "无法建立耳机读取超时上下文";
+                return false;
+            }
+            var watchdog = new Canceller(threadHandle);
+            try
+            {
+                watchdog.Arm(timeoutMs);
+                bool ok = NativeMethods.ReadFile(_handle, _in, _in.Length, out read, IntPtr.Zero);
+                int err = ok ? 0 : Marshal.GetLastWin32Error();
+                watchdog.Disarm();
+                if (!ok)
                 {
-                    int code = Marshal.GetLastWin32Error();
-                    if (code == NativeMethods.ERROR_SEM_TIMEOUT || code == NativeMethods.ERROR_OPERATION_ABORTED)
+                    if (watchdog.Fired || err == NativeMethods.ERROR_SEM_TIMEOUT
+                        || err == NativeMethods.ERROR_OPERATION_ABORTED
+                        || err == NativeMethods.ERROR_INVALID_FUNCTION)
                     {
                         read = 0;
                         return true;
                     }
-                    error = "读取耳机失败 (Win32 " + Marshal.GetLastWin32Error() + ")";
+                    error = "读取耳机失败 (Win32 " + err + ")";
                     return false;
                 }
                 return true;
             }
-
-            // The raw HID probe succeeded on this collection without any watchdog, so avoid
-            // canceling the I/O while the receiver has a queued status report.
-            // ReadFile on this collection returns immediately with the queued report.
-            bool ok = NativeMethods.ReadFile(_handle, _in, _in.Length, out read, IntPtr.Zero);
-            if (!ok)
+            finally
             {
-                int err = Marshal.GetLastWin32Error();
-                if (err == NativeMethods.ERROR_SEM_TIMEOUT || err == NativeMethods.ERROR_OPERATION_ABORTED)
-                {
-                    read = 0;
-                    return true;
-                }
-                error = "读取耳机失败 (Win32 " + err + ")";
-                return false;
+                watchdog.Dispose();
+                NativeMethods.CloseHandle(threadHandle);
             }
-            return true;
         }
 
         private sealed class Canceller : IDisposable

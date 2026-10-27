@@ -52,7 +52,9 @@ namespace RogMouse
         private HeadsetReading _lastGood;
 
         public HeadsetService(OpenDevice open) { _open = open; }
+        public Action<string> Log;
         public string LastError { get; private set; }
+        public DateTime LastGoodAt { get; private set; }
 
         public static HeadsetService CreateDefault()
         {
@@ -69,11 +71,17 @@ namespace RogMouse
         /// every path. A missing ACK is not an empty battery: it maps to NoResponse and leaves
         /// BatteryPercent at -1.
         /// </summary>
-        public HeadsetReading ReadOnce()
+        public HeadsetReading ReadOnce(bool allowAccess)
         {
             lock (_sync)
             {
                 var result = new HeadsetReading();
+                if (!allowAccess)
+                {
+                    result.Status = HeadsetStatus.NoResponse;
+                    result.Error = "--no-device：未访问耳机 HID";
+                    return result;
+                }
                 string error;
                 IHeadsetDevice device = null;
                 try
@@ -82,9 +90,12 @@ namespace RogMouse
                     if (device == null)
                     {
                         result.Error = error ?? "";
+                        if (result.Error.IndexOf("Win32", StringComparison.Ordinal) >= 0 && Log != null)
+                            Log("headset HID unavailable: " + result.Error);
                         result.Status = IsMissing(error) ? HeadsetStatus.ReceiverMissing
                             : HeadsetStatus.OpenFailed;
                         LastError = result.Error;
+                        if (Log != null) Log("headset open failed: " + result.Error);
                         return result;
                     }
 
@@ -94,13 +105,15 @@ namespace RogMouse
                         result.Status = HeadsetStatus.NoResponse;
                         result.Error = error ?? "耳机无响应";
                         LastError = result.Error;
+                        if (Log != null) Log("headset no response: " + result.Error);
                         return result;
                     }
-                    if (battery.Length < 1 || battery[0] > 100)
+                    if (battery.Length != 1 || battery[0] > 100)
                     {
                         result.Status = HeadsetStatus.InvalidReply;
                         result.Error = "耳机电量回包格式无效";
                         LastError = result.Error;
+                        if (Log != null) Log("headset invalid battery payload: " + battery[0]);
                         return result;
                     }
 
@@ -109,7 +122,7 @@ namespace RogMouse
                     result.ReadAt = DateTime.Now;
 
                     byte[] charging = device.Query(RazerBlackSharkProtocol.CommandCharging, out error);
-                    if (charging != null && charging.Length >= 1)
+                    if (charging != null && charging.Length == 1)
                     {
                         result.ChargingKnown = true;
                         result.ExternalPower = charging[0] != 0;
@@ -121,6 +134,7 @@ namespace RogMouse
                     }
 
                     _lastGood = result;
+                    LastGoodAt = result.ReadAt;
                     return result;
                 }
                 catch (Exception ex)
@@ -128,6 +142,7 @@ namespace RogMouse
                     result.Status = HeadsetStatus.OpenFailed;
                     result.Error = "读取耳机异常：" + ex.GetType().Name;
                     LastError = result.Error;
+                    if (Log != null) Log("headset exception: " + ex.GetType().Name + ": " + ex.Message);
                     return result;
                 }
                 finally
@@ -135,6 +150,11 @@ namespace RogMouse
                     if (device != null) { try { device.Dispose(); } catch { } }
                 }
             }
+        }
+
+        public HeadsetReading ReadOnce()
+        {
+            return ReadOnce(true);
         }
 
         public HeadsetReading LastGood

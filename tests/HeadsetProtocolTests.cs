@@ -20,6 +20,8 @@ namespace RogMouse.Tests
             Run("SelectionRejectsWrongProductAndUsage", SelectionRejectsWrongProductAndUsage);
             Run("SelectionReturnsNullWithoutCandidate", SelectionReturnsNullWithoutCandidate);
             Run("OpenRejectsCollectionWithoutRawPacketLengths", OpenRejectsCollectionWithoutRawPacketLengths);
+            Run("QueryBuilderAllowsOnlyBatteryAndCharging", QueryBuilderAllowsOnlyBatteryAndCharging);
+            Run("MultiByteBatteryAndChargingPayloadsAreRejected", MultiByteBatteryAndChargingPayloadsAreRejected);
 
             int serviceResult = HeadsetServiceTests.RunAll();
             if (serviceResult != 0) _failed++;
@@ -242,6 +244,24 @@ namespace RogMouse.Tests
             item.InputLength = 64;
             item.OutputLength = 64;
             Equal(true, RazerHidDevice.HasProtocolLengths(item), "64-byte report lengths");
+        }
+
+        private static void QueryBuilderAllowsOnlyBatteryAndCharging()
+        {
+            var rejected = false;
+            try { RazerBlackSharkProtocol.BuildQuery(0x05); }
+            catch (ArgumentOutOfRangeException) { rejected = true; }
+            Equal(true, rejected, "non-query command rejected");
+        }
+
+        private static void MultiByteBatteryAndChargingPayloadsAreRejected()
+        {
+            int level;
+            bool connected;
+            Equal(false, RazerBlackSharkProtocol.TryReadBattery(Reply(0x21, 2, 87, 10), out level),
+                "two-byte battery rejected");
+            Equal(false, RazerBlackSharkProtocol.TryReadExternalPower(Reply(0x2A, 16, 1, 0), out connected),
+                "multi-byte charging rejected");
         }
     }
 }

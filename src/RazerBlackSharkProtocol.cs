@@ -34,6 +34,8 @@ namespace RogMouse
 
         public static byte[] BuildQuery(byte command)
         {
+            if (command != CommandBattery && command != CommandCharging)
+                throw new ArgumentOutOfRangeException("command");
             var b = new byte[PacketSize];
             b[0] = ReportId;
             b[1] = 0x80;
@@ -61,7 +63,7 @@ namespace RogMouse
             if (report[ReplyCommandOffset + 1] != 0x01) return false;
 
             int length = report[ReplyCommandOffset + 2];
-            if (length < 1 || length > 16) return false;
+            if (length != 1) return false;
             if (replyEnd(report) < ReplyPayloadOffset + length) return false;
 
             var result = new byte[length];

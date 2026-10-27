@@ -393,7 +393,43 @@
           </Grid>
         </Border>
 
-        <Border Grid.Column="2" Style="{StaticResource Card}">
+        <Grid Grid.Column="2">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+
+          <Grid x:Name="DeviceTabs" Grid.Row="0" Margin="26,2,26,14">
+            <StackPanel Orientation="Horizontal">
+              <Button x:Name="TabMouse" Style="{StaticResource Chip}" Content="鼠标" Tag="on" MinWidth="74"/>
+              <Button x:Name="TabHeadset" Content="耳机" Tag="off" MinWidth="74" Margin="0" Height="32"
+                      FontSize="12.5" Foreground="{StaticResource TextSecondary}" Cursor="Hand">
+                <Button.Template>
+                  <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" CornerRadius="9" Background="#0CFFFFFF" BorderBrush="#14FFFFFF"
+                            BorderThickness="1" Padding="14,0">
+                      <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="bd" Property="Background" Value="#1A44D62C"/>
+                        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                      </Trigger>
+                      <Trigger Property="Tag" Value="on">
+                        <Setter TargetName="bd" Property="Background" Value="{StaticResource RazerGradient}"/>
+                        <Setter TargetName="bd" Property="BorderBrush" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="#071006"/>
+                      </Trigger>
+                    </ControlTemplate.Triggers>
+                  </ControlTemplate>
+                </Button.Template>
+              </Button>
+            </StackPanel>
+            <TextBlock Text="设备" FontSize="11" Foreground="{StaticResource TextTertiary}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Grid>
+
+        <Border Grid.Row="1" Style="{StaticResource Card}">
           <Grid Margin="26,20,26,20">
             <Grid.RowDefinitions>
               <RowDefinition Height="Auto"/>
@@ -404,37 +440,7 @@
               <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Margin="0,0,0,18">
-              <StackPanel Orientation="Horizontal">
-                <Button x:Name="TabMouse" Style="{StaticResource Chip}" Content="鼠标" Tag="on" MinWidth="74"/>
-                <Button x:Name="TabHeadset" Content="耳机" Tag="off" MinWidth="74" Margin="0" Height="32"
-                        FontSize="12.5" Foreground="{StaticResource TextSecondary}" Cursor="Hand">
-                  <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                      <Border x:Name="bd" CornerRadius="9" Background="#0CFFFFFF" BorderBrush="#14FFFFFF"
-                              BorderThickness="1" Padding="14,0">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                      </Border>
-                      <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                          <Setter TargetName="bd" Property="Background" Value="#1A44D62C"/>
-                          <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-                        </Trigger>
-                        <Trigger Property="Tag" Value="on">
-                          <Setter TargetName="bd" Property="Background" Value="{StaticResource RazerGradient}"/>
-                          <Setter TargetName="bd" Property="BorderBrush" Value="Transparent"/>
-                          <Setter Property="Foreground" Value="#071006"/>
-                        </Trigger>
-                      </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                  </Button.Template>
-                </Button>
-              </StackPanel>
-              <TextBlock Text="设备" FontSize="11" Foreground="{StaticResource TextTertiary}"
-                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Grid>
-
-            <Grid x:Name="MousePage" Grid.Row="0" Grid.RowSpan="6" Margin="0,63,0,0">
+            <Grid x:Name="MousePage">
             <Grid.RowDefinitions>
               <RowDefinition Height="Auto"/>
               <RowDefinition Height="Auto"/>
@@ -646,7 +652,7 @@
           </Grid>
         </Border>
 
-        <Border x:Name="HeadsetPage" Grid.Column="2" Style="{StaticResource Card}" Visibility="Collapsed">
+        <Border x:Name="HeadsetPage" Grid.Row="1" Style="{StaticResource Card}" Visibility="Collapsed">
         <Grid Margin="26,20,26,20">
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -737,7 +743,7 @@
                   </Grid>
                   <Grid Grid.Row="1" Margin="0,0,0,13">
                     <TextBlock Text="接收器" FontSize="12" Foreground="{StaticResource TextTertiary}"/>
-                    <TextBlock Text="Razer USB 接收器" FontSize="12" HorizontalAlignment="Right"
+                    <TextBlock x:Name="HeadsetReceiver" Text="Razer USB 接收器" FontSize="12" HorizontalAlignment="Right"
                                Foreground="{StaticResource TextSecondary}"/>
                   </Grid>
                   <Grid Grid.Row="2" Margin="0,0,0,13">
@@ -791,6 +797,7 @@
           </Grid>
         </Grid>
         </Border>
+        </Grid>
       </Grid>
 
       <Grid Grid.Row="2" Margin="22,0,22,18">

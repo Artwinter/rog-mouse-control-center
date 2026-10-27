@@ -12,6 +12,8 @@ namespace RogMouse
     {
         private readonly Window _win;
         private readonly HeadsetService _service;
+        private readonly bool _noDevice;
+        private readonly bool _noPoll;
         private TextBlock _battery;
         private Border _bar;
         private TextBlock _state;
@@ -19,17 +21,24 @@ namespace RogMouse
         private TextBlock _power;
         private TextBlock _lastRead;
         private TextBlock _status;
+        private TextBlock _receiver;
+        private Border _stateBadge;
         private Button _refresh;
         private DispatcherTimer _timer;
         private bool _busy;
         private bool _pageSelected;
         private bool _suspended;
+        private int _generation;
+        private bool _automaticPolling = true;
+        private bool _suspendRefreshPending;
         private HeadsetReading _last;
 
-        public HeadsetController(Window win, HeadsetService service)
+        public HeadsetController(Window win, HeadsetService service, bool noDevice, bool noPoll)
         {
             _win = win;
             _service = service;
+            _noDevice = noDevice;
+            _noPoll = noPoll;
         }
 
         public void Initialize()
@@ -41,12 +50,15 @@ namespace RogMouse
             _power = (TextBlock)_win.FindName("HeadsetPower");
             _lastRead = (TextBlock)_win.FindName("HeadsetLastRead");
             _status = (TextBlock)_win.FindName("HeadsetStatus");
+            _receiver = (TextBlock)_win.FindName("HeadsetReceiver");
+            _stateBadge = (Border)_win.FindName("HeadsetStateBadge");
             _refresh = (Button)_win.FindName("BtnHeadsetRefresh");
             if (_refresh != null) _refresh.Click += delegate { Refresh(); };
 
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromSeconds(60);
             _timer.Tick += delegate { Refresh(); };
+            if (_noPoll) _automaticPolling = false;
             Render(null);
         }
 
@@ -54,15 +66,19 @@ namespace RogMouse
 
         public void SelectPage(bool selected)
         {
+            bool wasSelected = _pageSelected;
+            _generation++;
             _pageSelected = selected;
             if (selected)
             {
-                SyncTimer(true);
+                if (_suspended) { Render(_last); return; }
+                SyncTimer(_automaticPolling);
                 Refresh();
             }
             else
             {
                 SyncTimer(false);
+                if (wasSelected) _busy = false;
             }
             Render(_last);
         }
@@ -73,9 +89,11 @@ namespace RogMouse
         /// </summary>
         public void SyncAccess(bool suspended)
         {
+            bool resumed = _suspended && !suspended;
             _suspended = suspended;
             SyncTimer(!suspended && _pageSelected);
-            if (!suspended && _pageSelected && _last == null) Refresh();
+            if (resumed && _pageSelected) _suspendRefreshPending = true;
+            if (!suspended && _pageSelected && (_last == null || resumed)) Refresh();
             Render(_last);
         }
 
@@ -88,6 +106,13 @@ namespace RogMouse
             Render(reading);
         }
 
+        public void SetAutomaticPolling(bool enabled)
+        {
+            _automaticPolling = enabled;
+            if (!enabled) SyncTimer(false);
+            else if (_pageSelected && !_suspended) SyncTimer(true);
+        }
+
         private void SyncTimer(bool enabled)
         {
             if (_timer == null) return;
@@ -97,24 +122,56 @@ namespace RogMouse
 
         public void Refresh()
         {
+            if (_noDevice) return;
             if (_busy || !_pageSelected || !HeadsetPageState.CanPoll(true, _win.IsVisible,
                     _win.WindowState == WindowState.Minimized, _suspended)) return;
             _busy = true;
+            int generation = ++_generation;
             if (_refresh != null) _refresh.IsEnabled = false;
             if (_status != null && _last == null) _status.Text = "正在读取耳机电量…";
 
-            Task.Factory.StartNew(delegate { return _service.ReadOnce(); })
+            Task.Factory.StartNew(delegate { return _service.ReadOnce(!_noDevice); })
                 .ContinueWith(delegate(Task<HeadsetReading> t)
                 {
+                    if (t.IsFaulted)
+                    {
+                        var failed = new HeadsetReading();
+                        failed.Status = HeadsetStatus.OpenFailed;
+                        failed.Error = "读取耳机任务异常";
+                        t = Task<HeadsetReading>.FromResult(failed);
+                    }
                     var reading = t.Result;
                     _win.Dispatcher.BeginInvoke(new Action(delegate
                     {
+                        if (generation != _generation)
+                        {
+                        _busy = false;
+                            if (_refresh != null && _pageSelected && !_suspended) _refresh.IsEnabled = true;
+                        if (_suspendRefreshPending && _pageSelected && !_suspended)
+                        {
+                            _suspendRefreshPending = false;
+                            Refresh();
+                        }
+                            return;
+                        }
                         _last = reading;
                         Render(reading);
                         _busy = false;
                         if (_refresh != null) _refresh.IsEnabled = true;
+                        if (_suspendRefreshPending && _pageSelected && !_suspended)
+                        {
+                            _suspendRefreshPending = false;
+                            Refresh();
+                        }
                     }));
                 });
+        }
+
+        /// <summary>Stop timer and invalidate any in-flight result before the window closes.</summary>
+        public void Shutdown()
+        {
+            _generation++;
+            if (_timer != null) _timer.Stop();
         }
 
         private void Render(HeadsetReading reading)
@@ -135,6 +192,13 @@ namespace RogMouse
                 _power.Text = "--";
                 _lastRead.Text = "最后读取 --";
                 _status.Text = "正在读取耳机电量…";
+                if (_receiver != null) _receiver.Text = "检测中…";
+                if (_stateBadge != null)
+                {
+                    _stateBadge.Background = (Brush)new BrushConverter().ConvertFromString("#1A44D62C");
+                    _stateBadge.BorderBrush = (Brush)new BrushConverter().ConvertFromString("#4D44D62C");
+                    _state.Foreground = (Brush)new BrushConverter().ConvertFromString("#44D62C");
+                }
                 return;
             }
 
@@ -144,8 +208,23 @@ namespace RogMouse
                 ? "2.4 GHz 接收器在线 · 耳机关机或超出范围"
                 : "2.4 GHz 无线接收器";
             _lastRead.Text = reading.ReadAt == DateTime.MinValue
-                ? "最后读取 --"
+                ? (_service.LastGoodAt == DateTime.MinValue ? "最后读取 --" : "上次成功 " + _service.LastGoodAt.ToString("HH:mm:ss"))
                 : "最后读取 " + reading.ReadAt.ToString("HH:mm:ss");
+
+            bool unavailable = reading.Status == HeadsetStatus.ReceiverMissing
+                || reading.Status == HeadsetStatus.OpenFailed;
+            bool noResponse = reading.Status == HeadsetStatus.NoResponse;
+            if (_receiver != null)
+                _receiver.Text = unavailable ? "未检测到" : (noResponse ? "在线 · 耳机未响应" : "Razer USB 接收器");
+            if (_stateBadge != null)
+            {
+                _stateBadge.Background = (Brush)new BrushConverter().ConvertFromString(
+                    unavailable ? "#18FF5C5C" : noResponse ? "#18FFC24D" : "#1A44D62C");
+                _stateBadge.BorderBrush = (Brush)new BrushConverter().ConvertFromString(
+                    unavailable ? "#55FF5C5C" : noResponse ? "#55FFC24D" : "#4D44D62C");
+                _state.Foreground = (Brush)new BrushConverter().ConvertFromString(
+                    unavailable ? "#FF7777" : noResponse ? "#FFD36A" : "#44D62C");
+            }
 
             if (stale)
             {

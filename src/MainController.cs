@@ -111,7 +111,8 @@ namespace RogMouse
 
             _win.Loaded += delegate { BeginRefresh(); };
             _headsetService = HeadsetService.CreateDefault();
-            _headset = new HeadsetController(_win, _headsetService);
+            _headsetService.Log = TrayIcon.Log;
+            _headset = new HeadsetController(_win, _headsetService, NoDevice, NoPoll);
             _headset.Initialize();
 
             // The offscreen renderer builds this same tree just to grab a PNG; a tray icon
@@ -676,6 +677,7 @@ namespace RogMouse
             if (_watch != null) _watch.Stop();
             if (_poll != null) _poll.Stop();
             if (_trayPoll != null) _trayPoll.Stop();
+            if (_headset != null) _headset.Shutdown();
             if (_tray != null) { _tray.Dispose(); _tray = null; }
             if (_api != null) { _api.Dispose(); _api = null; }
             System.Windows.Application.Current.Shutdown();
