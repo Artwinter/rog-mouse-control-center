@@ -29,7 +29,8 @@ fullscreen game is running — so it never competes with the pointer for its own
 - **Angle snapping** — on/off
 - **Battery** — percentage ring in the tray icon, live while the window is open
 - **Instant apply** — every change is written to the mouse and saved to firmware, no "Save" button
-- **Launch at logon** — in-app switch and tray menu item, per-user HKCU Run key, no admin rights
+- **Launch at logon** — in-app switch and tray menu item, per-user HKCU Run key, no admin rights;
+  logon starts silently in the tray, while a manual launch still opens the window
 - **Single instance** — launching again surfaces the running window instead of starting a second poller
 - **Stutter-safe** — device access is suspended whenever the window is hidden/minimized or a
   fullscreen app is in the foreground
