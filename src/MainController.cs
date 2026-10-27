@@ -223,7 +223,11 @@ namespace RogMouse
             tabHeadset.Tag = headset ? "on" : "off";
             mousePage.Visibility = headset ? Visibility.Collapsed : Visibility.Visible;
             headsetPage.Visibility = headset ? Visibility.Visible : Visibility.Collapsed;
-            if (_headset != null && startRead) _headset.SelectPage(headset);
+            if (_headset != null)
+            {
+                _headset.SelectPage(headset);
+                _headset.SyncAccess(ShouldSuspend);
+            }
         }
 
         /// <summary>Offscreen screenshot hook: use the same tab switch, then show one real reading.</summary>
