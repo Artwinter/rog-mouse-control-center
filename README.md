@@ -5,6 +5,10 @@ A lightweight, single-exe replacement for ASUS Armoury Crate for the **ROG Keris
 rate, debounce time and angle snapping, and reads the battery — no Armoury Crate, no drivers,
 no .NET SDK, no third-party runtime.
 
+It also has a read-only **耳机** page for the **Razer BlackShark V2 Pro (2023) over its 2.4 GHz
+receiver** (`1532:0555`). That page reads the level and the receiver's charging-path byte; it does
+not configure EQ, microphone, THX, lighting, or firmware. Bluetooth is not used.
+
 Windows 10/11 · .NET Framework 4.x (preinstalled) · x86 single file · ~600 KB
 
 > Unofficial community project. Not affiliated with, endorsed by, or supported by ASUSTeK.
@@ -34,6 +38,8 @@ fullscreen game is running — so it never competes with the pointer for its own
 - **Single instance** — launching again surfaces the running window instead of starting a second poller
 - **Stutter-safe** — device access is suspended whenever the window is hidden/minimized or a
   fullscreen app is in the foreground
+- **Razer headset level** — switch to `耳机`; the selected page reads once immediately and every
+  60 seconds while visible, then releases the shared HID collection after each transaction
 
 ## Usage
 
@@ -52,6 +58,33 @@ Download the exe from [Releases](../../releases) and run it. No installation.
 | Tray icon | Battery ring: green ≥50%, yellow ≥20%, red below; tooltip shows detail |
 | Tray right-click | Show window / Re-read / **Launch at logon** / Quit |
 | "托盘诊断" button | Writes tray registration status and icon coordinates to the footer and `tray.log` |
+| `耳机` tab | Read-only BlackShark V2 Pro 2.4 GHz battery and charging-path status |
+
+## Razer BlackShark V2 Pro (2.4 GHz)
+
+The headset is recognized only when the HID collection exposes Razer VID `1532`, PID `0555`, a
+product string containing `BlackShark V2 Pro`, and vendor usage page `0xFF00`. The collection is
+opened shared, so Razer Synapse can stay open; it is released after every read.
+
+The headset does **not** use the 90-byte Razer mouse report. It uses the 64-byte "PA" exchange:
+
+| Command | Purpose |
+| --- | --- |
+| remote `0xE1` | select/exit the control session before and after a query |
+| `0x21` | battery level, 0–100 in the ACK payload |
+| `0x2A` | charging path: `0` on battery, non-zero on the cable |
+
+The receiver sends unrelated `PI` status frames before the ACK, so the transport keeps reading
+until the command echo matches or the bounded window expires. A missing ACK is shown as
+`接收器在线 · 耳机未响应`, never as 0%. A level outside 0–100 is rejected. A non-zero charging
+byte is shown as `已连接充电线`, not as a claim that the cells are actively charging near 100%.
+
+Battery polling runs only while the `耳机` page is selected, the window is visible and not minimized,
+and no fullscreen app is foregrounded. The handle is closed before the next timer tick.
+
+Protocol facts were cross-checked against HaloBattery's MIT-licensed `providers/blackshark.py`
+and OpenRazer PR #2862 for `1532:0555`. This implementation uses only the protocol facts; it does
+not copy the reference driver or bundle Razer software. The protocol is unofficial.
 
 ## Device access policy (why it does not cause stutter)
 
