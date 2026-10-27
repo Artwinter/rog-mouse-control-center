@@ -27,6 +27,7 @@ namespace RogMouse
         private TextBlock _dpiValue;
         private TextBlock _batteryValue;
         private TextBlock _batteryHint;
+        private Border _batteryFill;
         private Panel _stagePanel;
         private Panel _ratePanel;
         private Panel _debouncePanel;
@@ -71,6 +72,7 @@ namespace RogMouse
             _dpiValue = (TextBlock)_win.FindName("DpiValue");
             _batteryValue = (TextBlock)_win.FindName("BatteryValue");
             _batteryHint = (TextBlock)_win.FindName("BatteryHint");
+            _batteryFill = (Border)_win.FindName("BatteryFill");
             _stagePanel = (Panel)_win.FindName("StagePanel");
             _ratePanel = (Panel)_win.FindName("RatePanel");
             _debouncePanel = (Panel)_win.FindName("DebouncePanel");
@@ -104,6 +106,7 @@ namespace RogMouse
             _dpiValue.Text = "--";
 
             HookAutostart();
+            DrawBattery(-1);
 
             _win.Loaded += delegate { BeginRefresh(); };
             _headsetService = HeadsetService.CreateDefault();
@@ -1122,11 +1125,13 @@ namespace RogMouse
             {
                 _batteryValue.Text = st.BatteryPercent.ToString(CultureInfo.InvariantCulture);
                 _batteryHint.Text = BatteryWord(st.BatteryPercent);
+                DrawBattery(st.BatteryPercent);
             }
             else
             {
                 _batteryValue.Text = "--";
                 _batteryHint.Text = "无法读取电量";
+                DrawBattery(-1);
             }
 
             _snapToggle.IsChecked = st.AngleSnapping;
@@ -1190,6 +1195,7 @@ namespace RogMouse
             {
                 _batteryValue.Text = percent.ToString(CultureInfo.InvariantCulture);
                 _batteryHint.Text = BatteryWord(percent);
+                DrawBattery(percent);
             }
         }
 
@@ -1205,6 +1211,18 @@ namespace RogMouse
             if (percent >= 40) return "电量良好";
             if (percent >= 20) return "电量偏低";
             return "请尽快充电";
+        }
+
+        /// <summary>Fills the compact mouse telemetry bar; percent &lt; 0 leaves it empty.</summary>
+        private void DrawBattery(int percent)
+        {
+            if (_batteryFill == null) return;
+            if (percent < 0)
+            {
+                _batteryFill.Width = 0;
+                return;
+            }
+            _batteryFill.Width = 150.0 * Math.Min(percent, 100) / 100.0;
         }
 
     }
