@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Industrial Catalog</title>
+<style>
+  :root {
+    --paper: #f0ece2;
+    --paper-2: #e6dfd2;
+    --ink: #181917;
+    --muted: #717069;
+    --line: #c4bdaf;
+    --orange: #ff5a35;
+    --green: #315d42;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1200px; height: 760px; overflow: hidden; }
+  body { background: var(--paper); color: var(--ink); font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+  .frame {
+    width: 1200px; height: 760px; background: var(--paper); position: relative; overflow: hidden;
+    background-image: repeating-linear-gradient(0deg, rgba(24,25,23,.018) 0, rgba(24,25,23,.018) 1px, transparent 1px, transparent 5px);
+  }
+  .topbar { height: 62px; border-bottom: 2px solid var(--ink); display: flex; align-items: center; padding: 0 28px; }
+  .brand { font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif; font-size: 12px; letter-spacing: .18em; font-weight: 600; }
+  .brand em { font-style: normal; color: var(--orange); }
+  .topbar .rule { flex: 1; height: 1px; background: var(--line); margin: 0 24px; }
+  .topmeta { color: var(--muted); font-family: Bahnschrift, sans-serif; font-size: 9px; letter-spacing: .16em; display: flex; gap: 26px; }
+  .topmeta strong { color: var(--ink); font-weight: 500; }
+
+  .shell { display: grid; grid-template-columns: 410px 1fr; height: 698px; }
+  .hero {
+    background: var(--paper-2); border-right: 1px solid var(--line); padding: 28px 30px;
+    position: relative; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .hero::after {
+    content: ""; position: absolute; width: 280px; height: 280px; border-radius: 50%;
+    background: var(--orange); opacity: .09; right: -115px; top: 110px;
+  }
+  .hero-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .index { font-family: Bahnschrift, sans-serif; font-size: 82px; line-height: .8; font-weight: 300; color: rgba(24,25,23,.12); letter-spacing: -.05em; }
+  .hero-tag { border: 1px solid var(--ink); padding: 7px 10px; font-family: Bahnschrift, sans-serif; font-size: 8px; letter-spacing: .14em; }
+  .product-art { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; position: relative; z-index: 1; }
+  .product-art svg { width: 300px; height: 300px; stroke: var(--ink); fill: none; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; }
+  .product-art svg .soft { stroke: #8f897d; stroke-width: 2; }
+  .product-art svg .accent { stroke: var(--orange); }
+  .hero-caption { border-top: 1px solid var(--line); padding-top: 16px; display: flex; justify-content: space-between; }
+  .hero-caption .name { font-size: 12px; font-weight: 600; }
+  .hero-caption .meta { color: var(--muted); font-family: Bahnschrift, sans-serif; font-size: 9px; letter-spacing: .12em; text-align: right; line-height: 1.7; }
+
+  .content { padding: 26px 36px 24px; display: flex; flex-direction: column; min-width: 0; }
+  .device-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); height: 34px; }
+  .tab { padding: 0 0 10px; margin-right: 28px; color: var(--muted); font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif; font-size: 10px; letter-spacing: .13em; position: relative; }
+  .tab.active { color: var(--ink); }
+  .tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--orange); }
+  .tab .num { color: var(--orange); margin-right: 6px; }
+
+  .title-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 24px; }
+  .eyebrow { color: var(--muted); font-family: Bahnschrift, sans-serif; font-size: 9px; letter-spacing: .17em; }
+  h1 { font-size: 40px; line-height: 1.15; font-weight: 700; margin: 8px 0 0; letter-spacing: -.03em; }
+  h1 span { font-family: Bahnschrift, sans-serif; font-weight: 300; letter-spacing: -.04em; }
+  .status { text-align: right; padding-bottom: 2px; }
+  .status .label { font-family: Bahnschrift, sans-serif; font-size: 8px; letter-spacing: .16em; color: var(--muted); }
+  .status .value { font-size: 12px; margin-top: 6px; }
+  .status .value::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 8px; }
+
+  .battery-band { border-top: 1px solid var(--ink); border-bottom: 1px solid var(--line); margin-top: 23px; display: grid; grid-template-columns: 240px 1fr; min-height: 196px; }
+  .battery-value { display: flex; align-items: flex-end; padding: 14px 0 18px; border-right: 1px solid var(--line); }
+  .battery-value .big { font-family: Bahnschrift, sans-serif; font-size: 142px; line-height: .8; font-weight: 300; letter-spacing: -.07em; }
+  .battery-value .pct { font-family: Bahnschrift, sans-serif; font-size: 21px; color: var(--muted); margin: 0 0 14px 7px; }
+  .battery-detail { padding: 16px 0 18px 24px; display: flex; flex-direction: column; justify-content: space-between; }
+  .battery-detail .top { display: flex; justify-content: space-between; color: var(--muted); font-family: Bahnschrift, sans-serif; font-size: 8px; letter-spacing: .14em; }
+  .battery-detail .top strong { color: var(--orange); font-weight: 500; }
+  .scale { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-top: 22px; }
+  .cell { height: 28px; border: 1px solid var(--line); position: relative; }
+  .cell.on { background: var(--ink); border-color: var(--ink); }
+  .cell.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--orange); }
+  .scale-labels { display: flex; justify-content: space-between; margin-top: 7px; color: var(--muted); font-family: Bahnschrift, sans-serif; font-size: 8px; }
+  .battery-detail .state { font-size: 12px; margin-top: 18px; }
+  .battery-detail .state span { color: var(--muted); margin-left: 8px; font-size: 10px; }
+
+  .spec { margin-top: 16px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
+  .row { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .row .k { color: var(--muted); font-size: 10px; }
+  .row .v { font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif; font-size: 10px; letter-spacing: .04em; }
+  .row .v.green { color: var(--green); }
+
+  .lower { margin-top: auto; display: grid; grid-template-columns: 1fr 205px; gap: 20px; align-items: end; }
+  .note { border-left: 3px solid var(--orange); padding-left: 12px; }
+  .note .k { font-family: Bahnschrift, sans-serif; font-size: 8px; letter-spacing: .15em; color: var(--muted); }
+  .note p { margin: 6px 0 0; font-size: 10px; line-height: 1.65; color: var(--muted); }
+  .resync { height: 48px; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; font-size: 11px; }
+  .resync span:last-child { color: var(--orange); font-family: Bahnschrift, sans-serif; font-size: 9px; letter-spacing: .12em; }
+  .footer { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 10px; display: flex; justify-content: space-between; color: var(--muted); font-family: Bahnschrift, sans-serif; font-size: 8px; letter-spacing: .13em; }
+</style>
+</head>
+<body>
+<div class="frame">
+  <header class="topbar">
+    <div class="brand">PERIPHERAL CONTROL <em>/</em> LOCAL HARDWARE</div>
+    <div class="rule"></div>
+    <div class="topmeta"><span>WINDOWS <strong>10</strong></span><span>LINK <strong>2.4G</strong></span><span>23:54 <strong>LOCAL</strong></span></div>
+  </header>
+  <div class="shell">
+    <section class="hero">
+      <div class="hero-top">
+        <div class="index">02</div>
+        <div class="hero-tag">HEADSET / WIRELESS</div>
+      </div>
+      <div class="product-art">
+        <svg viewBox="0 0 320 320">
+          <path d="M52 174V144C52 77 101 35 166 38c66 3 106 48 106 111v28"/>
+          <path class="soft" d="M65 174V145c0-59 42-96 101-95 58 1 94 38 94 96v24"/>
+          <rect x="38" y="164" width="48" height="94" rx="21" fill="#e6dfd2"/>
+          <rect x="252" y="164" width="48" height="94" rx="21" fill="#e6dfd2"/>
+          <path class="accent" d="M44 188h34M44 205h34M44 222h34"/>
+          <path d="M274 252c-8 27-35 40-66 40h-26"/>
+          <path class="soft" d="M274 252c-8 27-35 40-66 40h-26" transform="translate(5 -7)"/>
+          <circle cx="179" cy="292" r="8" fill="#e6dfd2"/>
+          <circle cx="179" cy="292" r="3" fill="#ff5a35" stroke="none"/>
+          <path class="soft" d="M89 101c25-28 66-39 98-28"/>
+        </svg>
+      </div>
+      <div class="hero-caption">
+        <div class="name">BlackShark V2 Pro</div>
+        <div class="meta">2023 EDITION<br>RECEIVER / 1532:0555</div>
+      </div>
+    </section>
+
+    <main class="content">
+      <nav class="device-tabs">
+        <div class="tab"><span class="num">01</span>鼠标 / MOUSE</div>
+        <div class="tab active"><span class="num">02</span>耳机 / HEADSET</div>
+      </nav>
+
+      <div class="title-row">
+        <div>
+          <div class="eyebrow">RAZER AUDIO / 2.4 GHZ RECEIVER</div>
+          <h1>旋风黑鲨 <span>V2 PRO</span></h1>
+        </div>
+        <div class="status"><div class="label">DEVICE STATE</div><div class="value">接收器在线</div></div>
+      </div>
+
+      <div class="battery-band">
+        <div class="battery-value"><span class="big">76</span><span class="pct">%</span></div>
+        <div class="battery-detail">
+          <div class="top"><span>POWER LEVEL / REMAINING</span><strong>BATTERY</strong></div>
+          <div>
+            <div class="scale">
+              <i class="cell on"></i><i class="cell on"></i><i class="cell on"></i><i class="cell on"></i><i class="cell on"></i>
+              <i class="cell on"></i><i class="cell on"></i><i class="cell on"></i><i class="cell"></i><i class="cell"></i>
+            </div>
+            <div class="scale-labels"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+          </div>
+          <div class="state">电池供电 <span>未连接充电线</span></div>
+        </div>
+      </div>
+
+      <div class="spec">
+        <div class="row"><span class="k">连接方式</span><span class="v">2.4 GHz 无线</span></div>
+        <div class="row"><span class="k">接收器</span><span class="v green">在线 / ONLINE</span></div>
+        <div class="row"><span class="k">控制协议</span><span class="v">RAZER PA / READ ONLY</span></div>
+        <div class="row"><span class="k">自动刷新</span><span class="v">60 SEC / PAGE VISIBLE</span></div>
+      </div>
+
+      <div class="lower">
+        <div class="note">
+          <div class="k">LAST SYNC / 23:54:14</div>
+          <p>仅读取电量与供电状态。收起窗口、最小化或全屏游戏时暂停访问。</p>
+        </div>
+        <div class="resync"><span>重新读取耳机电量</span><span>RESYNC ↗</span></div>
+      </div>
+      <div class="footer"><span>NO CLOUD / NO SYNAPSE REQUIRED</span><span>LOCAL DEVICE CONTROL · 02</span></div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

@@ -180,8 +180,8 @@ namespace RogMouse.Tests
         {
             double w, h;
             WindowFit.Calculate(1920, 1040, out w, out h);
-            Equal(1120.0, w, "large width");
-            Equal(760.0, h, "large height");
+            Equal(1200.0, w, "large width");
+            Equal(780.0, h, "large height");
             WindowFit.Calculate(1366, 728, out w, out h);
             if (w > 1350 || h > 712) throw new Exception("window exceeds 1366x728 work area");
             WindowFit.Calculate(1024, 728, out w, out h);

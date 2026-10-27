@@ -9,12 +9,17 @@ It also has a read-only **耳机** page for the **Razer BlackShark V2 Pro (2023)
 receiver** (`1532:0555`). That page reads the level and the receiver's charging-path byte; it does
 not configure EQ, microphone, THX, lighting, or firmware. Bluetooth is not used.
 
+The redesigned shell uses a persistent device rail for `鼠标` and `耳机`, with the ROG mouse in
+signal red and the Razer headset in signal green.
+
 Windows 10/11 · .NET Framework 4.x (preinstalled) · x86 single file · ~600 KB
 
 > Unofficial community project. Not affiliated with, endorsed by, or supported by ASUSTeK.
 > Use at your own risk — it writes settings into the mouse's onboard firmware.
 
-![Screenshot](screenshot.png)
+![Mouse page](screenshot.png)
+
+![Headset page](screenshot-headset.png)
 
 > 中文说明见 [README.zh-CN.md](README.zh-CN.md)
 
