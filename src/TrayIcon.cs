@@ -472,6 +472,12 @@ namespace RogMouse
         private void ShowWindow()
         {
             Log("window show requested: tray click");
+            _win.ShowInTaskbar = true;
+            if (!_win.IsVisible)
+            {
+                _win.Left = (SystemParameters.PrimaryScreenWidth - _win.Width) / 2;
+                _win.Top = (SystemParameters.PrimaryScreenHeight - _win.Height) / 2;
+            }
             _win.Show();
             if (_win.WindowState == WindowState.Minimized) _win.WindowState = WindowState.Normal;
             _win.Activate();
@@ -501,9 +507,10 @@ namespace RogMouse
         public void Update(int percent, string transport)
         {
             if (_disposed) return;
-            // Unchanged readings skip the icon rebuild and the NIM_MODIFY round trip:
-            // the poll fires even when nothing moved, and every rebuild is GDI churn.
-            if (percent == _lastPercent && string.Equals(transport, _lastTransport, StringComparison.Ordinal)) return;
+            // Same-level refresh (including the five-minute keep-alive) only touches the
+            // tooltip/menu text. Do not rebuild the GDI icon when its pixels cannot change.
+            bool sameIcon = percent == _lastPercent;
+            if (sameIcon && string.Equals(transport, _lastTransport, StringComparison.Ordinal)) return;
             _lastPercent = percent;
             _lastTransport = transport;
 
@@ -515,6 +522,16 @@ namespace RogMouse
 
             if (_statusItem != null)
                 _statusItem.Text = percent >= 0 ? (body + "  " + (transport == null ? "" : transport)) : "电量未知";
+
+            if (sameIcon && _registered && _hwnd != IntPtr.Zero)
+            {
+                var data = NewData();
+                data.uFlags = NIF_TIP | NIF_SHOWTIP;
+                data.szTip = tip;
+                if (!Shell_NotifyIcon(NIM_MODIFY, ref data))
+                    Log("NIM_MODIFY tooltip failed, win32=" + Marshal.GetLastWin32Error());
+                return;
+            }
 
             IntPtr handle;
             Icon next = BuildIcon(percent, out handle);
