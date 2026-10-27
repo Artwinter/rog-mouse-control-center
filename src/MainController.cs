@@ -27,7 +27,6 @@ namespace RogMouse
         private TextBlock _dpiValue;
         private TextBlock _batteryValue;
         private TextBlock _batteryHint;
-        private Border _batteryFill;
         private Panel _stagePanel;
         private Panel _ratePanel;
         private Panel _debouncePanel;
@@ -72,7 +71,6 @@ namespace RogMouse
             _dpiValue = (TextBlock)_win.FindName("DpiValue");
             _batteryValue = (TextBlock)_win.FindName("BatteryValue");
             _batteryHint = (TextBlock)_win.FindName("BatteryHint");
-            _batteryFill = (Border)_win.FindName("BatteryFill");
             _stagePanel = (Panel)_win.FindName("StagePanel");
             _ratePanel = (Panel)_win.FindName("RatePanel");
             _debouncePanel = (Panel)_win.FindName("DebouncePanel");
@@ -101,7 +99,6 @@ namespace RogMouse
             HookDpi();
             HookExtras();
             BuildChips();
-            DrawBattery(-1);
 
             _slider.Value = 800;
             _dpiValue.Text = "--";
@@ -1125,13 +1122,11 @@ namespace RogMouse
             {
                 _batteryValue.Text = st.BatteryPercent.ToString(CultureInfo.InvariantCulture);
                 _batteryHint.Text = BatteryWord(st.BatteryPercent);
-                DrawBattery(st.BatteryPercent);
             }
             else
             {
                 _batteryValue.Text = "--";
                 _batteryHint.Text = "无法读取电量";
-                DrawBattery(-1);
             }
 
             _snapToggle.IsChecked = st.AngleSnapping;
@@ -1195,7 +1190,6 @@ namespace RogMouse
             {
                 _batteryValue.Text = percent.ToString(CultureInfo.InvariantCulture);
                 _batteryHint.Text = BatteryWord(percent);
-                DrawBattery(percent);
             }
         }
 
@@ -1213,21 +1207,5 @@ namespace RogMouse
             return "请尽快充电";
         }
 
-        /// <summary>Fills the compact telemetry bar; percent &lt; 0 leaves the track empty.</summary>
-        private void DrawBattery(int percent)
-        {
-            if (_batteryFill == null) return;
-            if (percent < 0)
-            {
-                _batteryFill.Width = 0;
-                _batteryFill.Background = Brushes.Transparent;
-                return;
-            }
-
-            _batteryFill.Width = 120.0 * Math.Min(percent, 100) / 100.0;
-            Color from = (Color)ColorConverter.ConvertFromString(percent < 20 ? "#FF4D4D" : "#FF2D55");
-            Color to = (Color)ColorConverter.ConvertFromString("#FF7A3D");
-            _batteryFill.Background = new LinearGradientBrush(from, to, 0);
-        }
     }
 }
