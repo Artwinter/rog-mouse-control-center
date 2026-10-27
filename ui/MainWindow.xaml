@@ -538,21 +538,11 @@
                         <TextBlock Text="DPI / SENSITIVITY" Style="{StaticResource UtilityLabel}"/>
                         <TextBlock Text="指针灵敏度" FontSize="15" Foreground="{StaticResource TextPrimary}" Margin="0,7,0,0"/>
                       </StackPanel>
-                      <Border Width="168" Height="76" HorizontalAlignment="Right" BorderBrush="{StaticResource Line}" BorderThickness="1" Background="#0A0D0E">
-                        <Grid ClipToBounds="True">
-                          <Image x:Name="HeroImage" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.92"/>
-                          <Border IsHitTestVisible="False">
-                            <Border.Background>
-                              <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                <GradientStop Color="#FF0A0D0E" Offset="0"/>
-                                <GradientStop Color="#000A0D0E" Offset="0.22"/>
-                                <GradientStop Color="#000A0D0E" Offset="0.82"/>
-                                <GradientStop Color="#FF0A0D0E" Offset="1"/>
-                              </LinearGradientBrush>
-                            </Border.Background>
-                          </Border>
-                        </Grid>
-                      </Border>
+                      <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <TextBlock Text="OPTICAL SENSOR" Style="{StaticResource UtilityLabel}" HorizontalAlignment="Right"/>
+                        <TextBlock Text="36K DPI" FontFamily="Bahnschrift" FontSize="24" FontWeight="Light"
+                                   Foreground="{StaticResource SignalRed}" HorizontalAlignment="Right" Margin="0,6,0,0"/>
+                      </StackPanel>
                     </Grid>
 
                     <Grid Grid.Row="1" Margin="0,22,0,0">
@@ -572,7 +562,7 @@
                     </Grid>
 
                     <StackPanel Grid.Row="2" VerticalAlignment="Center">
-                      <StackPanel x:Name="StagePanel" Orientation="Horizontal" Margin="0,8,0,0"/>
+                      <UniformGrid x:Name="StagePanel" Columns="4" Margin="0,8,0,0"/>
                       <Grid Margin="0,18,0,0">
                         <Grid.ColumnDefinitions>
                           <ColumnDefinition Width="*"/>
@@ -624,19 +614,19 @@
                       <TextBlock Text="响应与系统" FontSize="15" Foreground="{StaticResource TextPrimary}" Margin="0,7,0,0"/>
                     </StackPanel>
 
-                    <Grid Grid.Row="1" Margin="0,20,0,0">
+                    <StackPanel Grid.Row="1" Margin="0,20,0,0">
                       <StackPanel>
                         <TextBlock Text="轮询率" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                         <TextBlock Text="光标跟手程度" FontSize="9.5" Foreground="{StaticResource TextTertiary}" Margin="0,4,0,0"/>
                       </StackPanel>
-                      <StackPanel x:Name="RatePanel" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                    </Grid>
+                      <UniformGrid x:Name="RatePanel" Columns="4" HorizontalAlignment="Stretch" Margin="0,10,0,0"/>
+                    </StackPanel>
                     <StackPanel Grid.Row="2" Margin="0,16,0,0">
                       <StackPanel>
                         <TextBlock Text="按键响应 / MS" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
                         <TextBlock Text="数值越大越不易误触" FontSize="9.5" Foreground="{StaticResource TextTertiary}" Margin="0,4,0,0"/>
                       </StackPanel>
-                      <StackPanel x:Name="DebouncePanel" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+                      <UniformGrid x:Name="DebouncePanel" Columns="8" HorizontalAlignment="Stretch" Margin="0,10,0,0"/>
                     </StackPanel>
                     <Grid Grid.Row="3" Margin="0,16,0,0">
                       <StackPanel>
@@ -645,6 +635,13 @@
                       </StackPanel>
                       <ToggleButton x:Name="SnapToggle" Style="{StaticResource TacticalToggle}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                     </Grid>
+                    <Border Grid.Row="4" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Margin="0,18,0,0" Padding="0,12,0,0">
+                      <StackPanel>
+                        <TextBlock Text="WRITE MODE / ONBOARD" Style="{StaticResource UtilityLabel}"/>
+                        <TextBlock Text="即时写入并回读校验" FontSize="10.5" Foreground="{StaticResource TextSecondary}" Margin="0,8,0,0"/>
+                        <TextBlock Text="设置保存在鼠标板载固件，不依赖后台服务。" FontSize="9.5" Foreground="{StaticResource TextTertiary}" TextWrapping="Wrap" Margin="0,5,0,0" LineHeight="16"/>
+                      </StackPanel>
+                    </Border>
                     <Border Grid.Row="5" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Margin="0,18,0,0" Padding="0,12,0,0">
                       <StackPanel>
                         <TextBlock Text="FIRMWARE / DEVICE" Style="{StaticResource UtilityLabel}"/>

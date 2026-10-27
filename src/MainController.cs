@@ -29,8 +29,8 @@ namespace RogMouse
         private TextBlock _batteryValue;
         private TextBlock _batteryHint;
         private Path _batteryArc;
-        private StackPanel _stagePanel;
-        private StackPanel _ratePanel;
+        private Panel _stagePanel;
+        private Panel _ratePanel;
         private Panel _debouncePanel;
         private ToggleButton _snapToggle;
         private ToggleButton _autostartToggle;
@@ -74,8 +74,8 @@ namespace RogMouse
             _batteryValue = (TextBlock)_win.FindName("BatteryValue");
             _batteryHint = (TextBlock)_win.FindName("BatteryHint");
             _batteryArc = (Path)_win.FindName("BatteryArc");
-            _stagePanel = (StackPanel)_win.FindName("StagePanel");
-            _ratePanel = (StackPanel)_win.FindName("RatePanel");
+            _stagePanel = (Panel)_win.FindName("StagePanel");
+            _ratePanel = (Panel)_win.FindName("RatePanel");
             _debouncePanel = (Panel)_win.FindName("DebouncePanel");
             _infoFirmware = (TextBlock)_win.FindName("InfoFirmware");
             _specPreset = (TextBlock)_win.FindName("SpecPreset");

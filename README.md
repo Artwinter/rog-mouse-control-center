@@ -127,7 +127,6 @@ Notes:
 - `csc.exe` from .NET Framework only supports **C# 5** (no `out var`, string interpolation, `?.`).
 - `System.Drawing` / `System.Windows.Forms` are pulled in automatically; referencing them
   explicitly produces `error CS1703`.
-- Replace `ui/hero.png` (1272×592) and rebuild to change the product shot.
 
 ### Diagnostic switches
 
@@ -152,7 +151,6 @@ src/MainController.cs    UI binding, polling, suspension policy
 src/App.cs               entry point, single instance, DPI awareness, offscreen renderer
 ui/MainWindow.xaml       borderless window + card layout
 ui/app.ico               program icon (16–256 px)
-ui/hero.png              left-card product shot
 ui/app.manifest          DPI-awareness declaration
 build/build.ps1          build script
 ```

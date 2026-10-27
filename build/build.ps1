@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     No SDK, NuGet or Visual Studio needed: csc.exe from the installed .NET Framework does the job.
-    Output is a single x86 exe with the icon, manifest and XAML/hero image embedded.
+    Output is a single x86 exe with the icon, manifest and XAML embedded.
 
 .PARAMETER Out
     Output exe path. Defaults to dist\ROGMouseControlCenter.exe
@@ -64,7 +64,6 @@ $args = @('/nologo', '/target:winexe', '/platform:x86', '/optimize+', "/out:$Out
 foreach ($r in $refs) { $args += "/r:$r" }
 $args += $src
 $args += "/resource:$(Join-Path $root 'ui\MainWindow.xaml'),ui.MainWindow.xaml"
-$args += "/resource:$(Join-Path $root 'ui\hero.png'),ui.hero.png"
 $args += "/win32icon:$(Join-Path $root 'ui\app.ico')"
 $args += "/win32manifest:$(Join-Path $root 'ui\app.manifest')"
 

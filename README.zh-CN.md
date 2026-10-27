@@ -12,7 +12,7 @@ Wireless AimPoint 36K 的 DPI、轮询率、按键响应与直线修正，并读
 和状态层级。鼠标电量只在鼠标页显示，开机自启动属于全局设置，固定在左侧导轨底部。
 
 - 无需安装 Armoury Crate，也不依赖 .NET SDK 或任何第三方运行库
-- 单文件 exe，约 592 KB（内含 16–256 px 多尺寸图标与主视觉图），.NET Framework 4.x 自带环境即可运行
+- 单文件 exe，约 250 KB（内含 16–256 px 多尺寸图标与界面资源），.NET Framework 4.x 自带环境即可运行
 - **即时生效**：所有调整立刻写入鼠标并自动存进固件，没有「保存」按钮
 
 ## 使用方法
@@ -152,7 +152,6 @@ src/MainController.cs    界面与设备之间的绑定
 src/App.cs               入口、DPI 感知、窗口图标、离屏渲染自检
 ui/MainWindow.xaml       界面（无边框窗口 + 卡片布局）
 ui/app.ico               程序图标，16/24/32/48/64/128/256 七个尺寸
-ui/hero.png              左卡主视觉（按实拍照片风格化渲染的鼠标图）
 ui/app.manifest          DPI 感知声明，缺它窗口会被系统拉伸放大
 build/build.ps1          构建脚本
 dist/                    编译产物
@@ -167,7 +166,7 @@ cd <项目目录>
 $gac='C:\Windows\Microsoft.NET\assembly'
 $a=@('/nologo','/target:winexe','/platform:x86','/out:dist\ROG鼠标控制中心.exe')
 $a+='src\NativeMethods.cs','src\AsusHidDevice.cs','src\AsusProtocol.cs','src\Connection.cs','src\TrayIcon.cs','src\App.cs','src\MainController.cs'
-$a+='/resource:ui\MainWindow.xaml,ui.MainWindow.xaml','/resource:ui\hero.png,ui.hero.png'
+$a+='/resource:ui\MainWindow.xaml,ui.MainWindow.xaml'
 $a+='/win32icon:ui\app.ico','/win32manifest:ui\app.manifest'
 $a+="/r:$gac\GAC_MSIL\PresentationFramework\v4.0_4.0.0.0__31bf3856ad364e35\PresentationFramework.dll"
 $a+="/r:$gac\GAC_32\PresentationCore\v4.0_4.0.0.0__31bf3856ad364e35\PresentationCore.dll"
@@ -183,8 +182,5 @@ $a+="/r:$gac\GAC_MSIL\System.Xaml\v4.0_4.0.0.0__b77a5c561934e089\System.Xaml.dll
 - `/out:` 里的中文文件名**在交互式 / 内联 PowerShell 里完全正常**，上面这段直接粘到终端跑就行。
   只有当同一段命令被存成 `.ps1` 脚本文件再执行时才会因文件编码变成乱码；
   那种情况下的稳妥做法是先编译成 ASCII 名，再用 `Move-Item` 重命名。
-- 换主视觉时直接替换 `ui/hero.png`（建议 1272×592，宽高比 2.15）再重新编译即可。
-  `HeroImage` 上的 `HorizontalAlignment="Center" VerticalAlignment="Center"` 不能删：
-  `Image` 默认把 `UniformToFill` 的溢出部分从左边裁起，会让人物整体偏右约 20 px。
 - 左卡电量圆环占 128 px，靠底部对齐。上面「规格」区 `StackPanel` 的 `Margin="2,16,2,0"`
   与四行规格的 `Margin="0,0,0,10"` 是为它腾出空间用的，改大就会把圆环顶部裁掉。

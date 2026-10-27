@@ -92,9 +92,9 @@ git commit -m "feat: add tactical WPF shell"
 
 - [ ] **Step 1: Build the DPI instrument panel**
 
-Place `HeroImage` in a compact identity strip, then a large `DpiValue` readout, `DpiSlider`,
-`BtnMinus`, `BtnPlus`, `StagePanel`, and the quick-pick buttons. Keep `BatteryArc` and
-`BatteryValue` in the rail power cell.
+Use an optical-sensor badge instead of a product image, then place the large `DpiValue` readout,
+`DpiSlider`, `BtnMinus`, `BtnPlus`, `StagePanel`, and the quick-pick buttons. Keep `BatteryArc`
+and `BatteryValue` inside the mouse page header.
 
 - [ ] **Step 2: Build the response panel**
 

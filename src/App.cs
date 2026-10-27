@@ -194,29 +194,6 @@ namespace RogMouse
             catch { return null; }
         }
 
-        /// <summary>The product shot ships as its own resource so the art can be swapped without touching layout.</summary>
-        private static void ApplyHeroImage(Window win)
-        {
-            try
-            {
-                var host = win.FindName("HeroImage") as System.Windows.Controls.Image;
-                if (host == null) return;
-                var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("ui.hero.png");
-                if (stream == null) return;
-                var bmp = new BitmapImage();
-                bmp.BeginInit();
-                bmp.StreamSource = stream;
-                bmp.CacheOption = BitmapCacheOption.OnLoad;
-                // The card displays the shot at 274x148; decode for that size instead of
-                // retaining the 1272x592 source pixels for the lifetime of the process.
-                bmp.DecodePixelWidth = 548;
-                bmp.EndInit();
-                bmp.Freeze();
-                host.Source = bmp;
-            }
-            catch { }
-        }
-
         public static Window LoadWindow()
         {
             return LoadWindow(false);
@@ -234,7 +211,6 @@ namespace RogMouse
             var win = (Window)XamlReader.Parse(xaml);
             win.Icon = LoadAppIcon();
             FitWindowToWorkArea(win);
-            ApplyHeroImage(win);
             var controller = new MainController(win);
             controller.Headless = headless;
             controller.NoPoll = NoPoll;
