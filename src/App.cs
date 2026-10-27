@@ -296,7 +296,8 @@ namespace RogMouse
                 else Controller.RefreshSyncForPreview();
             }
 
-            const int W = 1000, H = 700;
+            int W = (int)Math.Round(win.Width);
+            int H = (int)Math.Round(win.Height);
             content.Width = W;
             content.Height = H;
             content.Measure(new Size(W, H));
