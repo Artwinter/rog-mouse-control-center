@@ -28,10 +28,9 @@ namespace RogMouse
     /// </summary>
     public sealed class RazerHidDevice : IDisposable
     {
-        private const int ReadSliceMs = 40;
         private const int WriteTimeoutMs = 400;
-        private const int QueryAttempts = 3;
-        private static readonly int[] DrainTimeouts = new[] { 0, 0, 0, 0 };
+        private const int QueryAttempts = 2;
+        private const int ReplyWindowMs = 1400;
 
         public const ushort RazerVendorId = 0x1532;
         public const ushort BlackSharkV2ProPid = 0x0555;
@@ -236,21 +235,38 @@ namespace RogMouse
 
                 try
                 {
-                    DrainInput();
                     if (!WriteFrame(RazerBlackSharkProtocol.BuildRemote(true), out error)) return null;
                     Thread.Sleep(35);
+                    if (!WriteFrame(RazerBlackSharkProtocol.BuildQuery(command), out error)) return null;
 
-                    for (int attempt = 0; attempt < QueryAttempts; attempt++)
+                    long deadline = Environment.TickCount + Math.Max(timeoutMs, ReplyWindowMs);
+                    for (int i = 0; i < 40; i++)
+                    {
+                        long left = deadline - Environment.TickCount;
+                        if (left <= 0) break;
+                        int read;
+                        if (!ReadFrame(Math.Min(40, (int)left), out read, out error)) return null;
+                        if (read < 4) continue;
+                        byte[] payload;
+                        if (RazerBlackSharkProtocol.TryReadPayload(_in, command, out payload))
+                            return payload;
+                    }
+
+                    // Retry once: after USB selective suspend the dongle can consume the first
+                    // query while its radio wakes. This second pass still uses the same
+                    // read-only command and never opens a second collection.
+                    if (QueryAttempts > 1)
                     {
                         if (!WriteFrame(RazerBlackSharkProtocol.BuildRemote(true), out error)) return null;
                         Thread.Sleep(35);
                         if (!WriteFrame(RazerBlackSharkProtocol.BuildQuery(command), out error)) return null;
-
-                        long deadline = Environment.TickCount + timeoutMs;
-                        while (Environment.TickCount < deadline)
+                        deadline = Environment.TickCount + ReplyWindowMs;
+                        for (int i = 0; i < 40; i++)
                         {
+                            long left = deadline - Environment.TickCount;
+                            if (left <= 0) break;
                             int read;
-                            if (!ReadFrame(ReadSliceMs, out read, out error)) return null;
+                            if (!ReadFrame(Math.Min(40, (int)left), out read, out error)) return null;
                             if (read < 4) continue;
                             byte[] payload;
                             if (RazerBlackSharkProtocol.TryReadPayload(_in, command, out payload))
@@ -263,20 +279,10 @@ namespace RogMouse
                 }
                 finally
                 {
+                    // Remote-off is best effort; it must not block the worker after a timeout.
                     string ignored;
                     WriteFrame(RazerBlackSharkProtocol.BuildRemote(false), out ignored);
                 }
-            }
-        }
-
-        private void DrainInput()
-        {
-            for (int i = 0; i < DrainTimeouts.Length; i++)
-            {
-                int read;
-                string ignored;
-                if (!ReadFrame(DrainTimeouts[i], out read, out ignored)) break;
-                if (read <= 0) break;
             }
         }
 
@@ -313,43 +319,22 @@ namespace RogMouse
                 return true;
             }
 
-            // A synchronous ReadFile can block indefinitely when the radio sleeps. The same
-            // CancelSynchronousIo watchdog used by AsusHidDevice keeps this bounded.
-            IntPtr threadHandle;
-            if (!NativeMethods.DuplicateHandle(NativeMethods.GetCurrentProcess(),
-                    NativeMethods.GetCurrentThread(), NativeMethods.GetCurrentProcess(),
-                    out threadHandle, 0, false, NativeMethods.DUPLICATE_SAME_ACCESS))
+            // The raw HID probe succeeded on this collection without any watchdog, so avoid
+            // canceling the I/O while the receiver has a queued status report.
+            // ReadFile on this collection returns immediately with the queued report.
+            bool ok = NativeMethods.ReadFile(_handle, _in, _in.Length, out read, IntPtr.Zero);
+            if (!ok)
             {
-                error = "无法建立耳机读取超时上下文";
+                int err = Marshal.GetLastWin32Error();
+                if (err == NativeMethods.ERROR_SEM_TIMEOUT || err == NativeMethods.ERROR_OPERATION_ABORTED)
+                {
+                    read = 0;
+                    return true;
+                }
+                error = "读取耳机失败 (Win32 " + err + ")";
                 return false;
             }
-            var watchdog = new Canceller(threadHandle);
-            try
-            {
-                watchdog.Arm(timeoutMs);
-                bool ok = NativeMethods.ReadFile(_handle, _in, _in.Length, out read, IntPtr.Zero);
-                int err = ok ? 0 : Marshal.GetLastWin32Error();
-                watchdog.Disarm();
-                if (!ok)
-                {
-                    // A timeout usually means "no report yet"; keep polling until the
-                    // caller's deadline rather than turning it into a hard failure.
-                    if (watchdog.Fired || err == NativeMethods.ERROR_SEM_TIMEOUT
-                        || err == NativeMethods.ERROR_OPERATION_ABORTED)
-                    {
-                        read = 0;
-                        return true;
-                    }
-                    error = "读取耳机失败 (Win32 " + err + ")";
-                    return false;
-                }
-                return true;
-            }
-            finally
-            {
-                watchdog.Dispose();
-                NativeMethods.CloseHandle(threadHandle);
-            }
+            return true;
         }
 
         private sealed class Canceller : IDisposable

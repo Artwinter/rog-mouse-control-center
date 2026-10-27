@@ -10,6 +10,7 @@ namespace RogMouse.Tests
         public static int Main(string[] args)
         {
             Run("BatteryAckParsesPercent", BatteryAckParsesPercent);
+            Run("CapturedBatteryAckParses77", CapturedBatteryAckParses77);
             Run("ChargingAckParsesExternalPower", ChargingAckParsesExternalPower);
             Run("UnrelatedOrMalformedFramesAreRejected", UnrelatedOrMalformedFramesAreRejected);
             Run("OutOfRangeBatteryIsRejected", OutOfRangeBatteryIsRejected);
@@ -19,6 +20,9 @@ namespace RogMouse.Tests
             Run("SelectionRejectsWrongProductAndUsage", SelectionRejectsWrongProductAndUsage);
             Run("SelectionReturnsNullWithoutCandidate", SelectionReturnsNullWithoutCandidate);
             Run("OpenRejectsCollectionWithoutRawPacketLengths", OpenRejectsCollectionWithoutRawPacketLengths);
+
+            int serviceResult = HeadsetServiceTests.RunAll();
+            if (serviceResult != 0) _failed++;
 
             Console.WriteLine(_failed == 0
                 ? "RESULT: " + _passed + " passed"
@@ -93,6 +97,20 @@ namespace RogMouse.Tests
             Equal(true, RazerBlackSharkProtocol.TryReadBattery(Reply(0x21, 1, 87), out value),
                 "battery ACK accepted");
             Equal(87, value, "battery value");
+        }
+
+        private static void CapturedBatteryAckParses77()
+        {
+            // Real 2.4 GHz receiver reply captured on this machine at 77%.
+            var raw = new byte[64];
+            byte[] prefix = {
+                0x02, 0x0E, 0x50, 0x49, 0x08, 0xC5, 0xFB, 0x9A, 0x14, 0x00,
+                0x04, 0x00, 0x21, 0x01, 0x01, 0x4D
+            };
+            Array.Copy(prefix, raw, prefix.Length);
+            int value;
+            Equal(true, RazerBlackSharkProtocol.TryReadBattery(raw, out value), "captured ACK accepted");
+            Equal(77, value, "captured battery value");
         }
 
         private static void ChargingAckParsesExternalPower()

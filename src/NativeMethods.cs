@@ -19,6 +19,7 @@ namespace RogMouse
         public const int ERROR_IO_PENDING = 997;
         public const int ERROR_SEM_TIMEOUT = 121;
         public const int ERROR_OPERATION_ABORTED = 995;
+        public const int ERROR_INVALID_FUNCTION = 1;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct SP_DEVICE_INTERFACE_DATA

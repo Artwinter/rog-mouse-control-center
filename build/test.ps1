@@ -15,7 +15,9 @@ $sources = @(
     'src\RazerBlackSharkProtocol.cs',
     'src\NativeMethods.cs',
     'src\RazerHidDevice.cs',
+    'src\HeadsetService.cs',
     'tests\HeadsetProtocolTests.cs'
+    'tests\HeadsetServiceTests.cs'
 ) | ForEach-Object { Join-Path $root $_ }
 
 $exe = Join-Path $outDir 'HeadsetProtocolTests.exe'
@@ -23,4 +25,16 @@ $exe = Join-Path $outDir 'HeadsetProtocolTests.exe'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 & $exe
-exit $LASTEXITCODE
+$testExit = $LASTEXITCODE
+
+$probeSources = @(
+    'src\RazerBlackSharkProtocol.cs',
+    'src\NativeMethods.cs',
+    'src\RazerHidDevice.cs',
+    'tests\HeadsetProbe.cs'
+) | ForEach-Object { Join-Path $root $_ }
+$probeExe = Join-Path $outDir 'HeadsetProbe.exe'
+& $fw /nologo /target:exe /platform:x86 "/out:$probeExe" $probeSources
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+exit $testExit
