@@ -250,14 +250,11 @@ namespace RogMouse
         /// </summary>
         public static void FitWindowToWorkArea(Window win)
         {
-            double maxW = Math.Max(640, SystemParameters.WorkArea.Width - 16);
-            double maxH = Math.Max(560, SystemParameters.WorkArea.Height - 16);
-            double w = Math.Min(1120, maxW);
-            double h = Math.Min(760, maxH);
-            win.Width = Math.Max(940, w);
-            win.Height = Math.Max(650, h);
-            if (win.Width > maxW) win.Width = maxW;
-            if (win.Height > maxH) win.Height = maxH;
+            double w, h;
+            WindowFit.Calculate(SystemParameters.WorkArea.Width, SystemParameters.WorkArea.Height,
+                out w, out h);
+            win.Width = w;
+            win.Height = h;
         }
 
         /// <summary>Renders the tray icon at a few charge levels into one strip.</summary>

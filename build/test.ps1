@@ -17,6 +17,7 @@ $sources = @(
     'src\RazerHidDevice.cs',
     'src\HeadsetService.cs',
     'src\HeadsetPageState.cs',
+    'src\WindowFit.cs',
     'tests\HeadsetProtocolTests.cs'
     'tests\HeadsetServiceTests.cs'
 ) | ForEach-Object { Join-Path $root $_ }

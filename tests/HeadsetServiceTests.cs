@@ -33,6 +33,8 @@ namespace RogMouse.Tests
             Run("HeadsetPagePollingGate", HeadsetPagePollingGate, ref passed, ref failed);
             Run("HeadsetPageStateText", HeadsetPageStateText, ref passed, ref failed);
             Run("HeadsetPageStaleReading", HeadsetPageStaleReading, ref passed, ref failed);
+            Run("FreshReadingReplacesExpiredValue", FreshReadingReplacesExpiredValue, ref passed, ref failed);
+            Run("WindowFitStaysInsideWorkArea", WindowFitStaysInsideWorkArea, ref passed, ref failed);
             Console.WriteLine("RESULT: " + (failed == 0 ? passed + " passed" : failed + " failed, " + passed + " passed"));
             return failed == 0 ? 0 : 1;
         }
@@ -157,6 +159,32 @@ namespace RogMouse.Tests
             Equal(false, HeadsetPageState.IsStale(reading, reading.ReadAt.AddSeconds(30)), "fresh");
             Equal(true, HeadsetPageState.IsStale(reading, reading.ReadAt.AddSeconds(91)), "stale");
             Equal("--", HeadsetPageState.LevelText(reading, reading.ReadAt.AddSeconds(91)), "stale level");
+        }
+
+        private static void FreshReadingReplacesExpiredValue()
+        {
+            var old = new HeadsetReading();
+            old.Status = HeadsetStatus.Ok;
+            old.BatteryPercent = 77;
+            old.ReadAt = new DateTime(2026, 10, 27, 12, 0, 0);
+            var fresh = new HeadsetReading();
+            fresh.Status = HeadsetStatus.Ok;
+            fresh.BatteryPercent = 55;
+            fresh.ReadAt = new DateTime(2026, 10, 27, 12, 2, 0);
+            Equal("--", HeadsetPageState.LevelText(old, old.ReadAt.AddSeconds(120)), "expired");
+            Equal("55", HeadsetPageState.LevelText(fresh, fresh.ReadAt.AddSeconds(1)), "fresh");
+        }
+
+        private static void WindowFitStaysInsideWorkArea()
+        {
+            double w, h;
+            WindowFit.Calculate(1920, 1040, out w, out h);
+            Equal(1120.0, w, "large width");
+            Equal(760.0, h, "large height");
+            WindowFit.Calculate(1366, 728, out w, out h);
+            if (w > 1350 || h > 712) throw new Exception("window exceeds 1366x728 work area");
+            WindowFit.Calculate(1024, 728, out w, out h);
+            if (w > 1008 || h > 712) throw new Exception("window exceeds 1024x728 work area");
         }
     }
 }
