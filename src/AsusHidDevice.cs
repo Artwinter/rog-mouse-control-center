@@ -27,6 +27,8 @@ namespace RogMouse
         private SafeFileHandle _handle;
         private readonly object _sync = new object();
         private bool _disposed;
+        private readonly byte[] _outBuf = new byte[BufferSize];
+        private readonly byte[] _inBuf = new byte[BufferSize];
 
         public string Path { get; private set; }
         public ushort VendorId { get; private set; }
@@ -214,12 +216,12 @@ namespace RogMouse
             {
                 if (_disposed || _handle == null || _handle.IsInvalid) return null;
 
-                var outBuf = new byte[BufferSize];
-                outBuf[0] = 0x00;
-                outBuf[1] = (byte)(cmd & 0xFF);
-                outBuf[2] = (byte)((cmd >> 8) & 0xFF);
+                Array.Clear(_outBuf, 0, _outBuf.Length);
+                _outBuf[0] = 0x00;
+                _outBuf[1] = (byte)(cmd & 0xFF);
+                _outBuf[2] = (byte)((cmd >> 8) & 0xFF);
                 if (parameters != null)
-                    Array.Copy(parameters, 0, outBuf, 3, Math.Min(parameters.Length, BufferSize - 3));
+                    Array.Copy(parameters, 0, _outBuf, 3, Math.Min(parameters.Length, BufferSize - 3));
 
                 // Watchdog: a synchronous ReadFile on this device can block forever when the
                 // mouse is asleep, so cancel it from a timer thread after TimeoutMs.
@@ -234,30 +236,29 @@ namespace RogMouse
                 {
                     int written;
                     watchdog.Arm(TimeoutMs);
-                    bool wrote = NativeMethods.WriteFile(_handle, outBuf, BufferSize, out written, IntPtr.Zero);
+                    bool wrote = NativeMethods.WriteFile(_handle, _outBuf, BufferSize, out written, IntPtr.Zero);
                     int writeErr = wrote ? 0 : Marshal.GetLastWin32Error();
                     watchdog.Disarm();
                     if (!wrote) { Diag += "W_ERR" + writeErr + ";"; return null; }
 
-                    var inBuf = new byte[BufferSize];
                     for (int attempt = 0; attempt < 8; attempt++)
                     {
-                        Array.Clear(inBuf, 0, inBuf.Length);
+                        Array.Clear(_inBuf, 0, _inBuf.Length);
                         int read;
                         watchdog.Arm(TimeoutMs);
-                        bool readOk = NativeMethods.ReadFile(_handle, inBuf, BufferSize, out read, IntPtr.Zero);
+                        bool readOk = NativeMethods.ReadFile(_handle, _inBuf, BufferSize, out read, IntPtr.Zero);
                         int readErr = readOk ? 0 : Marshal.GetLastWin32Error();
                         watchdog.Disarm();
 
                         if (!readOk) { Diag += "R_ERR" + readErr + ";"; return null; }
                         if (read < 4) continue;
-                        if (inBuf[1] == 0xFF && inBuf[2] == 0xAA) { Diag += "STATUS_ERROR;"; return null; }
-                        if (inBuf[1] == (byte)(cmd & 0xFF) && inBuf[2] == (byte)((cmd >> 8) & 0xFF))
+                        if (_inBuf[1] == 0xFF && _inBuf[2] == 0xAA) { Diag += "STATUS_ERROR;"; return null; }
+                        if (_inBuf[1] == (byte)(cmd & 0xFF) && _inBuf[2] == (byte)((cmd >> 8) & 0xFF))
                         {
                             // Strip the leading report id so the caller sees the same layout
                             // libratbag uses: [0..1] command echo, [4..] payload.
                             var resp = new byte[PacketSize];
-                            Array.Copy(inBuf, 1, resp, 0, PacketSize);
+                            Array.Copy(_inBuf, 1, resp, 0, PacketSize);
                             return resp;
                         }
                     }
