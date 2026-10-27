@@ -1222,7 +1222,7 @@ namespace RogMouse
                 _batteryFill.Width = 0;
                 return;
             }
-            _batteryFill.Width = 150.0 * Math.Min(percent, 100) / 100.0;
+            _batteryFill.Width = 128.0 * Math.Min(percent, 100) / 100.0;
         }
 
     }
