@@ -15,6 +15,10 @@ namespace RogMouse.Tests
             Run("OutOfRangeBatteryIsRejected", OutOfRangeBatteryIsRejected);
             Run("QueryFramesMatchProtocol", QueryFramesMatchProtocol);
             Run("PacketIsZeroPaddedAndReportIdFirst", PacketIsZeroPaddedAndReportIdFirst);
+            Run("SelectsOnlyBlackSharkV2ProVendorCollection", SelectsOnlyBlackSharkV2ProVendorCollection);
+            Run("SelectionRejectsWrongProductAndUsage", SelectionRejectsWrongProductAndUsage);
+            Run("SelectionReturnsNullWithoutCandidate", SelectionReturnsNullWithoutCandidate);
+            Run("OpenRejectsCollectionWithoutRawPacketLengths", OpenRejectsCollectionWithoutRawPacketLengths);
 
             Console.WriteLine(_failed == 0
                 ? "RESULT: " + _passed + " passed"
@@ -47,6 +51,12 @@ namespace RogMouse.Tests
         {
             if (expected != actual)
                 throw new Exception(what + " expected " + expected + ", got " + actual);
+        }
+
+        private static void Equal(object expected, object actual, string what)
+        {
+            if (!object.Equals(expected, actual))
+                throw new Exception(what + " expected " + (expected ?? "null") + ", got " + (actual ?? "null"));
         }
 
         private static void EqualBytes(byte[] expected, byte[] actual, string what)
@@ -165,6 +175,55 @@ namespace RogMouse.Tests
                 for (int i = 12; i < f.Length; i++)
                     Equal(0, f[i], "padding at " + i);
             }
+        }
+
+        private static RazerHidInterface Candidate(ushort vid, ushort pid, string name, ushort usagePage)
+        {
+            var item = new RazerHidInterface();
+            item.VendorId = vid;
+            item.ProductId = pid;
+            item.ProductName = name;
+            item.UsagePage = usagePage;
+            item.Usage = 1;
+            item.Path = "path";
+            return item;
+        }
+
+        private static void SelectsOnlyBlackSharkV2ProVendorCollection()
+        {
+            var mouse = Candidate(0x1532, 0x0084, "Razer DeathAdder V2 Pro", 0xFF00);
+            var headsetWrongPage = Candidate(0x1532, 0x0555, "Razer BlackShark V2 Pro 2.4", 0x0001);
+            var headset = Candidate(0x1532, 0x0555, "Razer BlackShark V2 Pro 2.4", 0xFF00);
+            var selected = RazerHidDevice.Select(new[] { mouse, headsetWrongPage, headset },
+                0x1532, 0x0555, "BlackShark V2 Pro", 0xFF00);
+            if (selected != headset) throw new Exception("selected the wrong HID collection");
+        }
+
+        private static void SelectionRejectsWrongProductAndUsage()
+        {
+            var wrongProduct = Candidate(0x1532, 0x0555, "Razer Barracuda Pro", 0xFF00);
+            var wrongUsage = Candidate(0x1532, 0x0555, "Razer BlackShark V2 Pro", 0x0001);
+            Equal(null, RazerHidDevice.Select(new[] { wrongProduct }, 0x1532, 0x0555,
+                "BlackShark V2 Pro", 0xFF00), "wrong product");
+            Equal(null, RazerHidDevice.Select(new[] { wrongUsage }, 0x1532, 0x0555,
+                "BlackShark V2 Pro", 0xFF00), "wrong usage page");
+        }
+
+        private static void SelectionReturnsNullWithoutCandidate()
+        {
+            Equal(null, RazerHidDevice.Select(new RazerHidInterface[0], 0x1532, 0x0555,
+                "BlackShark V2 Pro", 0xFF00), "empty collection");
+        }
+
+        private static void OpenRejectsCollectionWithoutRawPacketLengths()
+        {
+            var item = Candidate(0x1532, 0x0555, "Razer BlackShark V2 Pro 2.4", 0xFF00);
+            item.InputLength = 0;
+            item.OutputLength = 0;
+            Equal(false, RazerHidDevice.HasProtocolLengths(item), "zero report lengths");
+            item.InputLength = 64;
+            item.OutputLength = 64;
+            Equal(true, RazerHidDevice.HasProtocolLengths(item), "64-byte report lengths");
         }
     }
 }

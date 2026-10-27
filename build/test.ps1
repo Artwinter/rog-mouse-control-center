@@ -13,6 +13,8 @@ if (-not (Test-Path -LiteralPath $fw)) { throw 'csc.exe not found' }
 
 $sources = @(
     'src\RazerBlackSharkProtocol.cs',
+    'src\NativeMethods.cs',
+    'src\RazerHidDevice.cs',
     'tests\HeadsetProtocolTests.cs'
 ) | ForEach-Object { Join-Path $root $_ }
 
