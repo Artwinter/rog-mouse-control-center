@@ -37,6 +37,19 @@ namespace RogMouse
         private Border _statusDot;
         private TextBlock _connText;
         private TextBlock _deviceName;
+        private TextBlock _headerDevice;
+        private TextBlock _headerLink;
+        private TextBlock _headerEyebrow;
+        private TextBlock _tabMouseStatus;
+        private TextBlock _tabHeadsetStatus;
+        private TextBlock _chipMouse;
+        private TextBlock _chipHeadset;
+        private Border _chipMouseDot;
+        private Border _chipHeadsetDot;
+        /// <summary>Last mouse transaction result, used by the small status tags.</summary>
+        private bool _mouseOnline;
+        /// <summary>True once a transaction or an enumeration has actually been attempted.</summary>
+        private bool _mouseProbed;
         private TextBlock _infoFirmware;
         private TextBlock _specPreset, _specRate, _specDebounce, _specConn, _specCharge;
 
@@ -90,6 +103,15 @@ namespace RogMouse
             _statusDot = (Border)_win.FindName("StatusDot");
             _connText = (TextBlock)_win.FindName("ConnText");
             _deviceName = (TextBlock)_win.FindName("DeviceName");
+            _headerDevice = (TextBlock)_win.FindName("HeaderDevice");
+            _headerLink = (TextBlock)_win.FindName("HeaderLink");
+            _headerEyebrow = (TextBlock)_win.FindName("HeaderEyebrow");
+            _tabMouseStatus = (TextBlock)_win.FindName("TabMouseStatus");
+            _tabHeadsetStatus = (TextBlock)_win.FindName("TabHeadsetStatus");
+            _chipMouse = (TextBlock)_win.FindName("ChipMouse");
+            _chipHeadset = (TextBlock)_win.FindName("ChipHeadset");
+            _chipMouseDot = (Border)_win.FindName("ChipMouseDot");
+            _chipHeadsetDot = (Border)_win.FindName("ChipHeadsetDot");
 
             // Every edit now applies immediately, so persisting to firmware is debounced:
             // a drag would otherwise fire a save per 50 DPI step.
@@ -104,10 +126,13 @@ namespace RogMouse
             BuildChips();
 
             _slider.Value = 800;
-            _dpiValue.Text = "--";
+            ShowDpiHero("--");
 
             HookAutostart();
             DrawBattery(-1);
+            // Paint the idle wording before the first transaction so nothing on screen claims a
+            // transport or a link state that has not been measured yet.
+            PaintDeviceTags();
 
             _win.Loaded += delegate { BeginRefresh(); };
             _win.Loaded += delegate { _headset.ReadOnceForTrayStartup(); };
@@ -116,6 +141,9 @@ namespace RogMouse
             _headsetService.Log = TrayIcon.Log;
             _headset = new HeadsetController(_win, _headsetService, NoDevice, NoPoll);
             _headset.ReadingChanged = delegate(HeadsetReading reading) { PushTray(); };
+            // The rail row has to follow every repaint, including the ones that keep the last
+            // reading when the page is not selected.
+            _headset.Rendered = delegate { PaintHeadsetTags(); };
             _headset.Initialize();
 
             // The offscreen renderer builds this same tree just to grab a PNG; a tray icon
@@ -247,6 +275,15 @@ namespace RogMouse
             if (_headset == null) return;
             SwitchDevice(true, false);
             var reading = _headsetService != null ? _headsetService.ReadOnce() : null;
+            if (App.Demo && (reading == null || reading.Status != HeadsetStatus.Ok))
+            {
+                reading = new HeadsetReading();
+                reading.Status = HeadsetStatus.Ok;
+                reading.BatteryPercent = 74;
+                reading.ChargingKnown = true;
+                reading.ExternalPower = false;
+                reading.ReadAt = DateTime.Now;
+            }
             _headset.Preview(reading);
         }
 
@@ -285,7 +322,7 @@ namespace RogMouse
             {
                 if (_suppressSlider) return;
                 int dpi = Snap(_slider.Value);
-                _dpiValue.Text = dpi.ToString("N0", CultureInfo.InvariantCulture);
+                ShowDpiHero(dpi.ToString("N0", CultureInfo.InvariantCulture));
                 // The readout updates on every step, but the write is debounced so a drag
                 // does not hammer the HID pipe.
                 ScheduleApply();
@@ -357,7 +394,8 @@ namespace RogMouse
                 {
                     _autostartToggle.IsChecked = !want;
                     _footStatus.Text = error;
-                    SetDot(false);
+                    // A registry failure says nothing about the mouse link, so the status dot
+                    // and the device tags keep whatever the last transaction proved.
                     TrayIcon.Log("autostart failed: " + error);
                     return;
                 }
@@ -405,9 +443,9 @@ namespace RogMouse
             {
                 int index = i;
                 var b = new Button();
-                b.Style = (Style)_win.FindResource("Chip");
-                b.Content = "档位 " + (i + 1);
-                b.MinWidth = 76;
+                b.Style = (Style)_win.FindResource("StageChip");
+                b.Content = (i + 1) + " · --";
+                b.ToolTip = "档位 " + (i + 1);
                 b.Tag = "off";
                 b.Click += delegate { SelectPreset(index); };
                 _stagePanel.Children.Add(b);
@@ -418,7 +456,7 @@ namespace RogMouse
             {
                 int hz = rates[i];
                 var b = new Button();
-                b.Style = (Style)_win.FindResource("Chip");
+                b.Style = (Style)_win.FindResource("RateChip");
                 b.Content = hz + " Hz";
                 b.Tag = "off";
                 b.Click += delegate { SetRate(hz); };
@@ -449,7 +487,7 @@ namespace RogMouse
                 string text = b.Content as string;
                 b.Tag = (text == match) ? "on" : "off";
                 // Re-apply the template so the Style trigger re-evaluates.
-                b.Style = (Style)_win.FindResource("Chip");
+                b.Style = (Style)_win.FindResource("RateChip");
             }
         }
 
@@ -479,7 +517,7 @@ namespace RogMouse
                 var b = _stagePanel.Children[i] as Button;
                 if (b == null) continue;
                 b.Tag = (i == index) ? "on" : "off";
-                b.Style = (Style)_win.FindResource("Chip");
+                b.Style = (Style)_win.FindResource("StageChip");
             }
         }
 
@@ -490,8 +528,8 @@ namespace RogMouse
             for (int i = 0; i < _stagePanel.Children.Count && i < st.DpiX.Length; i++)
             {
                 var b = (Button)_stagePanel.Children[i];
-                b.Content = "档位 " + (i + 1) + " · " + st.DpiX[i].ToString("N0", CultureInfo.InvariantCulture);
-                b.MinWidth = 92;
+                b.Content = (i + 1) + " · " + st.DpiX[i].ToString("N0", CultureInfo.InvariantCulture);
+                b.ToolTip = "档位 " + (i + 1);
             }
         }
 
@@ -705,24 +743,77 @@ namespace RogMouse
             try
             {
                 _conn = ConnectionInfo.Detect();
+                ApplyConnection();
                 if (_api == null)
                 {
                     var dev = AsusHidDevice.OpenFirst();
-                    if (dev == null) { _footStatus.Text = "未找到 ROG 鼠标"; return; }
+                    if (dev == null)
+                    {
+                        if (App.Demo)
+                        {
+                            var demo = DemoMouseState();
+                            _state = demo;
+                            ApplyState(demo);
+                            SetDot(true);
+                            _footStatus.Text = "已连接（演示数据）";
+                            return;
+                        }
+                        _footStatus.Text = "未找到 ROG 鼠标";
+                        SetDot(false);
+                        return;
+                    }
                     _api = new AsusProtocol(dev);
                 }
                 var st = _api.ReadAll();
-                if (st.BatteryPercent < 0 && st.DpiX[0] <= 50) return;
+                // Screenshot review must not change just because the physical mouse happened to
+                // wake for a partial battery read. Demo mode always renders the complete sample.
+                if (App.Demo) st = DemoMouseState();
+                if (st.BatteryPercent < 0 && st.DpiX[0] <= 50)
+                {
+                    if (!App.Demo) { SetDot(false); return; }
+                    st = DemoMouseState();
+                }
                 if (st.ActivePreset >= 0)
                     _selectedPreset = ClampPreset(st.ActivePreset, st.DpiX.Length);
                 _state = st;
                 ApplyState(st);
+                SetDot(true);
                 _footStatus.Text = "已连接 · " + DateTime.Now.ToString("HH:mm:ss");
             }
             catch (Exception ex)
             {
                 _footStatus.Text = "读取失败：" + ex;
+                SetDot(false);
+                if (App.Demo)
+                {
+                    var st = DemoMouseState();
+                    _state = st;
+                    ApplyState(st);
+                    SetDot(true);
+                    _footStatus.Text = "已连接（演示数据） · " + DateTime.Now.ToString("HH:mm:ss");
+                }
             }
+        }
+
+        /// <summary>
+        /// Synthetic mouse reading for the screenshot hooks only. The hardware is asleep most of
+        /// the time this tool is developed against, so the populated layout still needs a way to
+        /// be reviewed. Reachable exclusively through --shot-demo.
+        /// </summary>
+        private static MouseState DemoMouseState()
+        {
+            var st = new MouseState();
+            st.Valid = true;
+            st.Connected = true;
+            st.BatteryPercent = 78;
+            st.DpiX = new int[] { 400, 800, 1200, 3200 };
+            st.DpiY = new int[] { 400, 800, 1200, 3200 };
+            st.ActivePreset = 2;
+            st.PollingRate = 1000;
+            st.Debounce = 12;
+            st.AngleSnapping = false;
+            st.FirmwarePrimary = "4.0.1";
+            return st;
         }
 
         private void BeginRefresh()
@@ -935,7 +1026,7 @@ namespace RogMouse
             _suppressSlider = true;
             _slider.Value = dpi;
             _suppressSlider = false;
-            _dpiValue.Text = dpi.ToString("N0", CultureInfo.InvariantCulture);
+            ShowDpiHero(dpi.ToString("N0", CultureInfo.InvariantCulture));
             MarkActiveStage(index);
 
             if (_api == null) { _footStatus.Text = "设备未连接"; return; }
@@ -1119,11 +1210,120 @@ namespace RogMouse
             if (btnRefresh != null) btnRefresh.IsEnabled = on;
         }
 
+        /// <summary>
+        /// Single source of truth for "the mouse answered": paints the header dot and the two
+        /// small status tags together so they can never disagree.
+        /// </summary>
         private void SetDot(bool ok)
         {
-            _statusDot.Background = new SolidColorBrush(ok
-                ? (Color)ColorConverter.ConvertFromString("#3DDC84")
-                : (Color)ColorConverter.ConvertFromString("#FF5C5C"));
+            _mouseOnline = ok;
+            _mouseProbed = true;
+            PaintDeviceTags();
+        }
+
+        /// <summary>
+        /// Paints the DPI hero. A placeholder has to shrink: two hyphens at 86 px read as two
+        /// slabs and dominate a page that has no number to report yet.
+        /// </summary>
+        private void ShowDpiHero(string text)
+        {
+            if (_dpiValue == null) return;
+            bool placeholder = text == "--";
+            _dpiValue.Text = placeholder ? "--" : text;
+            _dpiValue.FontSize = placeholder ? 40 : 86;
+            _dpiValue.Foreground = TagBrush(placeholder ? "#5B6561" : "#FFFFFF");
+        }
+
+        /// <summary>
+        /// Paints the two small status tags that claim the mouse is alive: the header pair on
+        /// the mouse page and the status line in the device rail. Both come from the last
+        /// transaction result plus the USB enumeration, never from a fixed label, so a mouse
+        /// that is unplugged or asleep cannot be reported as "online".
+        /// </summary>
+        private void PaintDeviceTags()
+        {
+            bool live = _mouseOnline;
+            string code = _conn != null ? _conn.TransportCode : "LINK";
+            // Three honest states: the mouse answered, nothing is attached, or the probe ran and
+            // the mouse stayed quiet. "STANDBY" only covers the case where no attempt happened yet.
+            bool absent = _conn != null && _conn.Count == 0;
+            string verdict = live ? "OK" : absent ? "OFFLINE" : _mouseProbed ? "NO REPLY" : "STANDBY";
+            // Only a probe that got no answer is worth the amber caution colour; "nothing
+            // attached" and "nothing attempted yet" stay neutral.
+            string tone = live ? "#79FF5A" : _mouseProbed && !absent ? "#FFBD62" : "#5B6561";
+
+            if (_headerEyebrow != null)
+                _headerEyebrow.Text = "MOUSE / " + EyebrowTransport();
+            if (_headerDevice != null)
+                _headerDevice.Text = "DEVICE 01 / " + (live ? "LIVE" : "IDLE");
+            if (_headerLink != null)
+            {
+                _headerLink.Text = code + " / " + verdict;
+                _headerLink.Foreground = TagBrush(tone);
+            }
+            if (_tabMouseStatus != null)
+            {
+                _tabMouseStatus.Text = live ? "CONNECTED" : absent ? "OFFLINE" : _mouseProbed ? "NO REPLY" : "STANDBY";
+                _tabMouseStatus.Foreground = TagBrush(tone);
+            }
+            // The dot and the tags are one signal, so they share one colour.
+            if (_statusDot != null) _statusDot.Background = TagBrush(tone);
+            // The title chip for the mouse follows the same reading as the battery bar.
+            PaintTitleChips();
+        }
+
+        /// <summary>
+        /// Headset counterpart: the rail row shows what the receiver last answered, using the
+        /// same degraded colour as the headset page badge.
+        /// </summary>
+        private void PaintHeadsetTags()
+        {
+            if (_tabHeadsetStatus == null || _headset == null) return;
+            var reading = _headset.LastReading;
+            _tabHeadsetStatus.Text = HeadsetPageState.LinkCode(reading);
+            _tabHeadsetStatus.Foreground = TagBrush(HeadsetPageState.LinkColor(reading));
+            PaintTitleChips();
+        }
+
+        /// <summary>
+        /// Title-bar battery chips. Both used to be two static coloured dots that implied the
+        /// device was present; now each chip carries the level and only lights up when that
+        /// device actually produced a number.
+        /// </summary>
+        private void PaintTitleChips()
+        {
+            int mouse = _state != null ? _state.BatteryPercent : -1;
+            if (_chipMouse != null)
+                _chipMouse.Text = "ROG KERIS " + (mouse >= 0 ? mouse + "%" : "--");
+            if (_chipMouseDot != null)
+                _chipMouseDot.Background = TagBrush(mouse >= 0 ? "#FF4655" : "#5B6561");
+
+            var hs = _headset != null ? _headset.LastReading : null;
+            bool hsOk = hs != null && hs.Status == HeadsetStatus.Ok;
+            if (_chipHeadset != null)
+                _chipHeadset.Text = "BLACKSHARK " + (hsOk ? hs.BatteryPercent + "%" : "--");
+            if (_chipHeadsetDot != null)
+                _chipHeadsetDot.Background = TagBrush(hsOk ? "#79FF5A" : "#5B6561");
+        }
+
+        private static Brush TagBrush(string hex)
+        {
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+        }
+
+        /// <summary>
+        /// Transport half of the mouse-page eyebrow label. Derived from the enumeration so a
+        /// mouse on Bluetooth or a cable is not still titled as a 2.4 GHz receiver.
+        /// </summary>
+        private string EyebrowTransport()
+        {
+            if (_conn == null) return "RECEIVER";
+            if (_conn.Bluetooth && (_conn.Receiver || _conn.Wired)) return "2.4 GHZ + BT";
+            if (_conn.Bluetooth) return "BLUETOOTH";
+            if (_conn.Receiver && _conn.Wired) return "2.4 GHZ + USB";
+            if (_conn.Receiver) return "2.4 GHZ RECEIVER";
+            if (_conn.Wired) return "USB WIRED";
+            return "RECEIVER";
         }
 
         // ---------------- rendering ----------------
@@ -1140,6 +1340,9 @@ namespace RogMouse
 
         private void ApplyState(MouseState st)
         {
+            // Any state that came back from the mouse proves the link is answering, including
+            // the cheap poll and the offscreen preview path, which do not run through Run().
+            if (st.Connected || st.BatteryPercent >= 0) { _mouseOnline = true; PaintDeviceTags(); }
             // The active preset has to be resolved before anything paints, otherwise the
             // big readout shows the previous preset's DPI for one refresh.
             if (st.DpiX != null && st.DpiX.Length > 0 && st.ActivePreset >= 0)
@@ -1155,7 +1358,7 @@ namespace RogMouse
                 _suppressSlider = true;
                 _slider.Value = st.DpiX[shown];
                 _suppressSlider = false;
-                _dpiValue.Text = st.DpiX[shown].ToString("N0", CultureInfo.InvariantCulture);
+                ShowDpiHero(st.DpiX[shown].ToString("N0", CultureInfo.InvariantCulture));
             }
 
             if (st.BatteryPercent >= 0)
@@ -1211,10 +1414,12 @@ namespace RogMouse
             if (_connText != null) _connText.Text = _conn.Transport;
             if (_specConn != null) _specConn.Text = _conn.TransportShort;
             if (_specCharge != null) _specCharge.Text = _conn.Power;
+            PaintDeviceTags();
         }
 
         private void PushTray()
         {
+            PaintHeadsetTags();
             if (_tray == null) return;
             int percent = _state != null ? _state.BatteryPercent : -1;
             var hs = _headset != null ? _headset.LastReading : null;
@@ -1244,6 +1449,7 @@ namespace RogMouse
                 _batteryValue.Text = percent.ToString(CultureInfo.InvariantCulture);
                 _batteryHint.Text = BatteryWord(percent);
                 DrawBattery(percent);
+                PaintTitleChips();
             }
         }
 

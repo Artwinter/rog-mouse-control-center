@@ -30,6 +30,29 @@ namespace RogMouse
                 Shot(args[1], true, true);
                 return;
             }
+            // Dev helper: like --shot-live/--shot-headset but with synthetic values when the
+            // hardware is asleep, so the populated layout can still be reviewed. Pass "headset"
+            // as a third argument for the headset page. Never reachable from the windowed app.
+            if (args.Length >= 2 && args[0] == "--shot-demo")
+            {
+                Demo = true;
+                bool hs = args.Length >= 3 && args[2] == "headset";
+                // Optional "WxH" (third or fourth token) renders the clamped minimum size so the
+                // tight-layout review covers the 1040x680 case, not only the 1200x780 design.
+                for (int i = 2; i < args.Length; i++)
+                {
+                    int xi = args[i].IndexOf('x');
+                    int w, h;
+                    if (xi > 0 && int.TryParse(args[i].Substring(0, xi), out w)
+                        && int.TryParse(args[i].Substring(xi + 1), out h))
+                    {
+                        DemoWidth = w;
+                        DemoHeight = h;
+                    }
+                }
+                Shot(args[1], true, hs);
+                return;
+            }
             // Dev helper: export the tray icons themselves, scaled up for inspection.
             if (args.Length >= 2 && args[0] == "--icon")
             {
@@ -177,6 +200,13 @@ namespace RogMouse
         /// <summary>Set by --startup: create the window and tray, but keep the window hidden.</summary>
         public static bool Startup;
 
+        /// <summary>Set by --shot-demo: the two screenshot hooks may substitute synthetic values.</summary>
+        public static bool Demo;
+
+        /// <summary>Optional forced canvas size for --shot-demo; zero keeps the fitted window size.</summary>
+        public static int DemoWidth;
+        public static int DemoHeight;
+
         /// <summary>窗口/任务栏图标直接复用 exe 自带的 win32 图标，不再额外内嵌一份。</summary>
         private static ImageSource LoadAppIcon()
         {
@@ -274,6 +304,9 @@ namespace RogMouse
 
             int W = (int)Math.Round(win.Width);
             int H = (int)Math.Round(win.Height);
+            // --shot-demo may force the clamped minimum so the tight layout gets reviewed too.
+            if (DemoWidth > 0) { W = DemoWidth; win.Width = W; }
+            if (DemoHeight > 0) { H = DemoHeight; win.Height = H; }
             content.Width = W;
             content.Height = H;
             content.Measure(new Size(W, H));
@@ -292,5 +325,6 @@ namespace RogMouse
         {
             Shot(path, live, false);
         }
+
     }
 }

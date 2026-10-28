@@ -49,6 +49,23 @@ namespace RogMouse
         }
 
         /// <summary>
+        /// ASCII transport tag for the small uppercase header label, which is set in
+        /// Bahnschrift and must not mix in CJK glyphs.
+        /// </summary>
+        public string TransportCode
+        {
+            get
+            {
+                if (Bluetooth && (Receiver || Wired)) return "2.4G + BT";
+                if (Bluetooth) return "BT";
+                if (Receiver && Wired) return "2.4G + USB";
+                if (Receiver) return "2.4 GHZ";
+                if (Wired) return "USB";
+                return "LINK";
+            }
+        }
+
+        /// <summary>
         /// Power label. The 0x0712 battery frame carries no charging flag (verified on the
         /// device: no parameter variant and no sibling command exposes one), so the only
         /// honest signal is whether a cabled collection is enumerated.

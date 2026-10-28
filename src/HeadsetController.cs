@@ -68,6 +68,9 @@ namespace RogMouse
         public HeadsetReading LastReading { get { return _last; } }
         public Action<HeadsetReading> ReadingChanged;
 
+        /// <summary>Fires after the page has been painted so the rail tag can follow it.</summary>
+        public Action Rendered;
+
         public bool Suspended { get { return _suspended; } }
 
         /// <summary>
@@ -219,6 +222,11 @@ namespace RogMouse
             var now = DateTime.Now;
             bool stale = HeadsetPageState.IsStale(reading, now);
             _battery.Text = HeadsetPageState.LevelText(reading, now);
+            // A placeholder at 132 px is two slabs, not a readout. Shrink it and dim it so the
+            // page reads as "no number yet" instead of a broken gauge.
+            bool hero = _battery.Text != "--";
+            _battery.FontSize = hero ? 132 : 44;
+            _battery.Foreground = Badge(hero ? "#F2F0EA" : "#5B6561");
             double max = 252;
             var parent = System.Windows.Media.VisualTreeHelper.GetParent(_bar) as FrameworkElement;
             if (parent != null && parent.ActualWidth > 0) max = parent.ActualWidth;
@@ -228,21 +236,21 @@ namespace RogMouse
             {
                 _state.Text = "正在读取";
                 _conn.Text = "2.4 GHz 无线接收器 · 正在连接…";
-                _power.Text = "--";
+                _power.Text = HeadsetPageState.PowerText(null);
                 _lastRead.Text = "最后读取 --";
                 _status.Text = "正在读取耳机电量…";
                 if (_receiver != null) _receiver.Text = "检测中…";
                 if (_stateBadge != null)
                 {
-                    _stateBadge.Background = (Brush)new BrushConverter().ConvertFromString("#1A44D62C");
-                    _stateBadge.BorderBrush = (Brush)new BrushConverter().ConvertFromString("#4D44D62C");
-                    _state.Foreground = (Brush)new BrushConverter().ConvertFromString("#44D62C");
+                    _stateBadge.Background = Badge("#1A79FF5A");
+                    _stateBadge.BorderBrush = Badge("#4D79FF5A");
+                    _state.Foreground = Badge("#79FF5A");
                 }
                 return;
             }
 
             _state.Text = HeadsetPageState.StatusText(reading.Status, reading.ChargingKnown, reading.ExternalPower);
-            _power.Text = _state.Text;
+            _power.Text = HeadsetPageState.PowerText(reading);
             _conn.Text = reading.Status == HeadsetStatus.NoResponse
                 ? "2.4 GHz 接收器在线 · 耳机关机或超出范围"
                 : "2.4 GHz 无线接收器";
@@ -257,12 +265,13 @@ namespace RogMouse
                 _receiver.Text = unavailable ? "未检测到" : (noResponse ? "在线 · 耳机未响应" : "Razer USB 接收器");
             if (_stateBadge != null)
             {
-                _stateBadge.Background = (Brush)new BrushConverter().ConvertFromString(
-                    unavailable ? "#18FF5C5C" : noResponse ? "#18FFC24D" : "#1A44D62C");
-                _stateBadge.BorderBrush = (Brush)new BrushConverter().ConvertFromString(
-                    unavailable ? "#55FF5C5C" : noResponse ? "#55FFC24D" : "#4D44D62C");
-                _state.Foreground = (Brush)new BrushConverter().ConvertFromString(
-                    unavailable ? "#FF7777" : noResponse ? "#FFD36A" : "#44D62C");
+                // Every badge tint comes from the three design tokens so the headset page
+                // cannot drift into a different green or red than the rest of the deck.
+                string tone = unavailable ? "#FF4655" : noResponse ? "#FFBD62" : "#79FF5A";
+                string rgb = tone.Substring(1);
+                _stateBadge.Background = Badge("#1A" + rgb);
+                _stateBadge.BorderBrush = Badge("#4D" + rgb);
+                _state.Foreground = Badge(tone);
             }
 
             if (stale)
@@ -278,6 +287,13 @@ namespace RogMouse
 
             if (!string.IsNullOrEmpty(reading.Error) && reading.Status != HeadsetStatus.Ok)
                 _status.Text = reading.Error;
+
+            if (Rendered != null) Rendered();
+        }
+
+        private static Brush Badge(string argbHex)
+        {
+            return (Brush)new BrushConverter().ConvertFromString(argbHex);
         }
     }
 }
