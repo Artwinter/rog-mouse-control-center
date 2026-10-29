@@ -7,6 +7,13 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
+[assembly: AssemblyTitle("Peripheral Instrument")]
+[assembly: AssemblyProduct("外设仪表台")]
+[assembly: AssemblyDescription("Local peripheral control and telemetry")]
+[assembly: AssemblyVersion("1.6.0.0")]
+[assembly: AssemblyFileVersion("1.6.0.0")]
+[assembly: AssemblyInformationalVersion("1.6.0")]
+
 namespace RogMouse
 {
     public static class App

@@ -12,7 +12,10 @@ namespace RogMouse
     public static class AutoStart
     {
         private const string RunKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-        private const string ValueName = "ROGMouseControlCenter";
+        private const string StartupApprovedRunKey =
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run";
+        private const string ValueName = "PeripheralInstrument";
+        private const string LegacyValueName = "ROGMouseControlCenter";
         private const string StartupArgument = " --startup";
 
         /// <summary>Path written into the Run key; the app entry assembly, not the host exe of a shortcut.</summary>
@@ -37,13 +40,19 @@ namespace RogMouse
                 {
                     if (key == null) return false;
                     string v = key.GetValue(ValueName, null) as string;
-                    return string.Equals(v, RunCommand(), StringComparison.OrdinalIgnoreCase);
+                    return string.Equals(v, RunCommand(), StringComparison.OrdinalIgnoreCase)
+                        && !IsDisabledByWindows(ValueName);
                 }
             }
             catch { return false; }
         }
 
-        /// <summary>True when the Run value targets this exe but predates silent startup.</summary>
+        /// <summary>
+        /// True when launch-at-logon needs to be written or migrated. This covers an old
+        /// ROGMouseControlCenter path and a current-name value that points at an older exe.
+        /// A Windows-disabled entry is left alone so an explicit Task Manager disable is not
+        /// silently overridden during a routine app launch.
+        /// </summary>
         public static bool NeedsUpgrade()
         {
             try
@@ -52,9 +61,11 @@ namespace RogMouse
                 {
                     if (key == null) return false;
                     string v = key.GetValue(ValueName, null) as string;
-                    return v != null
-                        && v.IndexOf(ExePath(), StringComparison.OrdinalIgnoreCase) >= 0
-                        && !string.Equals(v, RunCommand(), StringComparison.OrdinalIgnoreCase);
+                    if (v != null && !string.Equals(v, RunCommand(), StringComparison.OrdinalIgnoreCase)
+                        && !IsDisabledByWindows(ValueName)) return true;
+
+                    string legacy = key.GetValue(LegacyValueName, null) as string;
+                    return !string.IsNullOrEmpty(legacy) && !IsDisabledByWindows(LegacyValueName);
                 }
             }
             catch { return false; }
@@ -69,10 +80,48 @@ namespace RogMouse
                 {
                     if (key == null) return false;
                     string v = key.GetValue(ValueName, null) as string;
-                    return v != null && v.IndexOf(ExePath(), StringComparison.OrdinalIgnoreCase) < 0;
+                    string legacy = key.GetValue(LegacyValueName, null) as string;
+                    return (v != null && v.IndexOf(ExePath(), StringComparison.OrdinalIgnoreCase) < 0)
+                        || (legacy != null && legacy.IndexOf(ExePath(), StringComparison.OrdinalIgnoreCase) < 0);
                 }
             }
             catch { return false; }
+        }
+
+        /// <summary>
+        /// Task Manager stores a separate launch approval flag. A valid Run value can still
+        /// be skipped at logon when that flag is disabled, so it is part of the real state.
+        /// </summary>
+        private static bool IsDisabledByWindows(string valueName)
+        {
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(StartupApprovedRunKey, false))
+                {
+                    if (key == null) return false;
+                    byte[] state = key.GetValue(valueName, null) as byte[];
+                    return state != null && state.Length > 0 && (state[0] & 1) != 0;
+                }
+            }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// Removes the Task Manager override so Windows starts honoring the Run value again.
+        /// A missing approval value is the normal enabled state.
+        /// </summary>
+        private static string ClearWindowsDisableOverride(string valueName)
+        {
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(StartupApprovedRunKey, true))
+                {
+                    if (key == null) return null;
+                    if (key.GetValue(valueName, null) != null) key.DeleteValue(valueName, false);
+                    return null;
+                }
+            }
+            catch (Exception ex) { return "无法清除 Windows 启动项禁用状态：" + ex.Message; }
         }
 
         /// <summary>Writes or updates the Run value. Returns null on success, else the error text.</summary>
@@ -84,8 +133,10 @@ namespace RogMouse
                 {
                     if (key == null) return "无法打开注册表 Run 键";
                     key.SetValue(ValueName, RunCommand(), RegistryValueKind.String);
-                    return null;
+                    if (key.GetValue(LegacyValueName, null) != null) key.DeleteValue(LegacyValueName, false);
                 }
+                string error = ClearWindowsDisableOverride(ValueName);
+                return error ?? ClearWindowsDisableOverride(LegacyValueName);
             }
             catch (Exception ex) { return "写入注册表失败：" + ex.Message; }
         }
@@ -99,6 +150,10 @@ namespace RogMouse
                 {
                     if (key == null) return null;
                     if (key.GetValue(ValueName, null) != null) key.DeleteValue(ValueName, false);
+                    if (key.GetValue(LegacyValueName, null) != null) key.DeleteValue(LegacyValueName, false);
+                    string error = ClearWindowsDisableOverride(ValueName);
+                    if (error != null) return error;
+                    ClearWindowsDisableOverride(LegacyValueName);
                     return null;
                 }
             }

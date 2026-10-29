@@ -1,6 +1,6 @@
 ---
 version: alpha
-name: "Peripheral Control Center"
+name: "Peripheral Instrument"
 description: "A local hardware control deck with tactical instrumentation, precise telemetry, and restrained gaming accents."
 colors:
   void: "#080A0B"
@@ -14,6 +14,8 @@ colors:
   signal-red: "#FF4655"
   signal-green: "#79FF5A"
   signal-amber: "#FFBD62"
+  brand-cobalt: "#456B96"
+  brand-coral: "#FF6D55"
   primary: "#79FF5A"
 typography:
   display:
@@ -69,7 +71,7 @@ components:
     textColor: "{colors.primary}"
 ---
 
-# Peripheral Control Center Design System
+# Peripheral Instrument Design System
 
 ## Overview
 
@@ -101,7 +103,8 @@ comes from measurement tools, signal paths, equipment labels, and status lamps.
 `void` is the window ground. `panel` and `panel-raised` separate instrument surfaces without
 shadows. `line` and `line-soft` encode structure. `text`, `muted`, and `dim` form a three-level
 reading hierarchy. `signal-red` identifies the ROG mouse, `signal-green` identifies the Razer
-headset and healthy telemetry, and `signal-amber` is reserved for caution or unknown state.
+headset and healthy telemetry, `signal-amber` is reserved for caution or unknown state, and
+`brand-cobalt`/`brand-coral` are reserved for application identity rather than device state.
 
 ## Typography
 

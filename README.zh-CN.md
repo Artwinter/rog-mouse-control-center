@@ -1,4 +1,4 @@
-# ROG 月刃 控制中心
+# 外设仪表台
 
 > English: [README.md](README.md)
 
@@ -15,9 +15,11 @@ Wireless AimPoint 36K 的 DPI、轮询率、按键响应与直线修正，并读
 - 单文件 exe，约 250 KB（内含 16–256 px 多尺寸图标与界面资源），.NET Framework 4.x 自带环境即可运行
 - **即时生效**：所有调整立刻写入鼠标并自动存进固件，没有「保存」按钮
 
+更新记录见 [CHANGELOG.md](CHANGELOG.md)。
+
 ## 使用方法
 
-双击 `deliver\ROG鼠标控制中心.exe`（推荐，见下方「托盘图标与目录位置」），或把快捷方式放到桌面。
+双击 `dist\PeripheralInstrument.exe`（推荐，见下方「托盘图标与目录位置」），或把快捷方式放到桌面。
 
 ![鼠标页](screenshot.png)
 
@@ -36,7 +38,7 @@ Wireless AimPoint 36K 的 DPI、轮询率、按键响应与直线修正，并读
 | 重新读取 | 从鼠标重新读取全部状态 |
 | 关闭按钮 / ESC | 收进系统托盘。窗口隐藏或最小化期间程序**完全不访问鼠标**（不轮询、不占用设备句柄），重新打开窗口时立刻读一次 |
 | 托盘图标 | 双环：外圈红色为鼠标，内圈绿色为耳机；悬停提示同时显示两台设备电量。窗口收起期间每 5 分钟低频刷新（全屏游戏时暂停） |
-| 托盘右键 | 显示主窗口 / 打开鼠标控制页 / 打开耳机电量页 / 重新读取两台设备 / **开机自启动** / 退出 |
+| 托盘右键 | 电量状态行可直接点击进入对应设备页；菜单保留显示主窗口 / 重新读取两台设备 / **开机自启动** / 退出 |
 | 托盘诊断 | 底部按钮，把托盘的注册状态和图标位置写进脚注，同时记录到 `tray.log` |
 | 鼠标 / 耳机 | 切换右侧设备页；耳机页选中时立即读取一次，之后每 60 秒刷新 |
 | 耳机 · 重新读取耳机电量 | 只读查询耳机电量与充电线状态，读完立即释放 HID 句柄 |
@@ -86,7 +88,7 @@ UIPI 直接拒绝并返回 `ERROR_ACCESS_DENIED (5)`，表现就是「程序能�
 
 - 交付用的 `deliver\` 目录是普通目录，从里面启动即可正常显示托盘图标
 - 如果复制到别处后托盘消失，先点「托盘诊断」：脚注会写明当前的完整性级别
-- 详细日志在 `%LOCALAPPDATA%\ROGMouse\tray.log`（该位置不可写时依次回退到 exe 同目录、临时目录），会记录 `NIM_ADD ok` / 失败错误码 / 图标坐标
+- 详细日志在 `%LOCALAPPDATA%\PeripheralInstrument\tray.log`（该位置不可写时依次回退到 exe 同目录、临时目录），会记录 `NIM_ADD ok` / 失败错误码 / 图标坐标
 - 托盘注册失败时**关闭窗口不会隐藏**，程序会保持窗口显示并给出提示，避免关掉后无路可回
 
 ## 环境要求
@@ -164,7 +166,7 @@ dist/                    编译产物
 ```powershell
 cd <项目目录>
 $gac='C:\Windows\Microsoft.NET\assembly'
-$a=@('/nologo','/target:winexe','/platform:x86','/out:dist\ROG鼠标控制中心.exe')
+$a=@('/nologo','/target:winexe','/platform:x86','/out:dist\PeripheralInstrument.exe')
 $a+='src\NativeMethods.cs','src\AsusHidDevice.cs','src\AsusProtocol.cs','src\Connection.cs','src\TrayIcon.cs','src\App.cs','src\MainController.cs'
 $a+='/resource:ui\MainWindow.xaml,ui.MainWindow.xaml'
 $a+='/win32icon:ui\app.ico','/win32manifest:ui\app.manifest'

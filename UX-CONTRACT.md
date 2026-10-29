@@ -1,4 +1,4 @@
-# Peripheral Control Center UX Contract
+# Peripheral Instrument UX Contract
 
 ## Navigation
 

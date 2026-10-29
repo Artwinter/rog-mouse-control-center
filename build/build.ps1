@@ -1,14 +1,14 @@
 ﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
-    Builds ROG Mouse Control Center with the .NET Framework compiler that ships with Windows.
+    Builds Peripheral Instrument with the .NET Framework compiler that ships with Windows.
 
 .DESCRIPTION
     No SDK, NuGet or Visual Studio needed: csc.exe from the installed .NET Framework does the job.
     Output is a single x86 exe with the icon, manifest and XAML embedded.
 
 .PARAMETER Out
-    Output exe path. Defaults to dist\ROGMouseControlCenter.exe
+    Output exe path. Defaults to dist\PeripheralInstrument.exe
 
 .EXAMPLE
     .\build\build.ps1
@@ -21,7 +21,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-if (-not $Out) { $Out = Join-Path $root 'dist\ROGMouseControlCenter.exe' }
+if (-not $Out) { $Out = Join-Path $root 'dist\PeripheralInstrument.exe' }
 
 # csc.exe lives in the Framework directory; prefer the 64-bit one, fall back to 32-bit.
 $fwCandidates = @(

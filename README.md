@@ -1,4 +1,4 @@
-# ROG Mouse Control Center / ROG 月刃 控制中心
+# Peripheral Instrument / 外设仪表台
 
 A lightweight, single-exe replacement for ASUS Armoury Crate for the **ROG Keris Wireless AimPoint**
 (and compatible ASUS ROG mice). Talks the ASUS private HID protocol directly to adjust DPI, polling
@@ -13,7 +13,9 @@ The redesigned shell uses a persistent device rail for `鼠标` and `耳机`, wi
 signal red and the Razer headset in signal green. Mouse battery telemetry stays inside the mouse
 workspace; global launch-at-logon lives in the rail footer.
 
-Windows 10/11 · .NET Framework 4.x (preinstalled) · x86 single file · ~600 KB
+Windows 10/11 · .NET Framework 4.x (preinstalled) · x86 single file · ~230 KB
+
+> Release history: [CHANGELOG.md](CHANGELOG.md)
 
 > Unofficial community project. Not affiliated with, endorsed by, or supported by ASUSTeK.
 > Use at your own risk — it writes settings into the mouse's onboard firmware.
@@ -63,7 +65,7 @@ Download the exe from [Releases](../../releases) and run it. No installation.
 | Polling rate / debounce / angle snapping | Applied and saved immediately |
 | Close button / ESC | Hides to tray; the program stops touching the device completely |
 | Tray icon | Dual ring: outer red = mouse, inner green = headset; tooltip shows both levels |
-| Tray right-click | Show window / Open mouse or headset page / Re-read both devices / **Launch at logon** / Quit |
+| Tray right-click | Click a battery row to open that device page; menu keeps show window / re-read both devices / **launch at logon** / quit |
 | "托盘诊断" button | Writes tray registration status and icon coordinates to the footer and `tray.log` |
 | `耳机` tab | Read-only BlackShark V2 Pro 2.4 GHz battery and charging-path status |
 
@@ -109,7 +111,7 @@ Fullscreen detection is one `GetForegroundWindow` + rectangle + window-style rea
 Windows only lets processes at **Medium integrity or above** add tray icons. If the exe sits in a
 folder carrying a Low mandatory label, `Shell_NotifyIcon` fails with `ERROR_ACCESS_DENIED (5)` and
 the only symptom is a missing icon. If that happens, click "托盘诊断": the footer reports the
-current integrity level. Logs go to `%LOCALAPPDATA%\ROGMouse\tray.log` (falling back to the exe
+current integrity level. Logs go to `%LOCALAPPDATA%\PeripheralInstrument\tray.log` (falling back to the exe
 folder, then `%TEMP%`).
 
 ## Build
@@ -119,7 +121,7 @@ No SDK needed — the .NET Framework compiler that ships with Windows is enough:
 ```powershell
 git clone <this repo>
 cd rog-mouse
-.\build\build.ps1                 # -> dist\ROGMouseControlCenter.exe
+.\build\build.ps1                 # -> dist\PeripheralInstrument.exe
 .\build\build.ps1 -Out C:\tmp\test.exe
 ```
 

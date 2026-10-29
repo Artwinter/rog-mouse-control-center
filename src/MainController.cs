@@ -382,10 +382,10 @@ namespace RogMouse
             // The switch is host-side state, not device state: it reads and writes the
             // registry and must not wait for a device answer.
             bool enabled = AutoStart.IsEnabled();
+            // Upgrade or migrate an older entry in place, so an enabled startup item keeps
+            // working after the executable or registry value name changes.
+            if (!enabled && AutoStart.NeedsUpgrade() && AutoStart.Enable() == null) enabled = true;
             _autostartToggle.IsChecked = enabled;
-            // Upgrade an existing v1.3 entry in place, so the current user gets silent
-            // startup without having to toggle the switch off and on after updating.
-            if (!enabled && AutoStart.NeedsUpgrade()) AutoStart.Enable();
             _autostartToggle.Click += delegate
             {
                 bool want = _autostartToggle.IsChecked == true;

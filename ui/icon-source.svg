@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="tile" x1=".1" y1="0" x2=".9" y2="1">
+      <stop offset="0" stop-color="#557da8"/>
+      <stop offset=".55" stop-color="#456b96"/>
+      <stop offset="1" stop-color="#1d3554"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".18"/>
+      <stop offset=".46" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity=".13"/>
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="220%">
+      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#0b1726" flood-opacity=".20"/>
+    </filter>
+  </defs>
+
+  <rect x="42" y="42" width="940" height="940" rx="224" fill="url(#tile)"/>
+  <rect x="42" y="42" width="940" height="940" rx="224" fill="url(#shine)"/>
+  <rect x="49" y="49" width="926" height="926" rx="218" fill="none"
+        stroke="#ffffff" stroke-opacity=".17" stroke-width="4"/>
+
+  <g fill="#f4f1e9" filter="url(#shadow)">
+    <path d="M512 145 L546 392 L512 462 L478 392 Z"/>
+    <path d="M879 512 L632 546 L562 512 L632 478 Z"/>
+    <path d="M512 879 L478 632 L512 562 L546 632 Z"/>
+    <path d="M145 512 L392 478 L462 512 L392 546 Z"/>
+    <path d="M695 246 L590 455 L548 486 L566 438 Z"/>
+    <path d="M778 695 L569 590 L538 548 L586 566 Z"/>
+    <path d="M329 778 L434 569 L476 538 L458 586 Z"/>
+    <path d="M246 329 L455 434 L486 476 L438 458 Z"/>
+  </g>
+  <circle cx="512" cy="512" r="46" fill="#ff6d55"/>
+  <circle cx="512" cy="512" r="13" fill="#ffb3a4"/>
+</svg>

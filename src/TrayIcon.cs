@@ -19,19 +19,87 @@ namespace RogMouse
     {
         private sealed class TacticalColorTable : WinForms.ProfessionalColorTable
         {
-            public override Color MenuItemSelected { get { return Color.FromArgb(40, 255, 255, 255); } }
-            public override Color MenuItemBorder { get { return Color.FromArgb(41, 48, 50); } }
-            public override Color MenuBorder { get { return Color.FromArgb(41, 48, 50); } }
+            public override Color MenuItemSelected { get { return Color.FromArgb(48, 255, 255, 255); } }
+            public override Color MenuItemBorder { get { return Color.FromArgb(62, 73, 75); } }
+            public override Color MenuBorder { get { return Color.FromArgb(52, 62, 64); } }
             public override Color ToolStripDropDownBackground { get { return Color.FromArgb(16, 20, 21); } }
             public override Color ImageMarginGradientBegin { get { return Color.FromArgb(16, 20, 21); } }
             public override Color ImageMarginGradientMiddle { get { return Color.FromArgb(16, 20, 21); } }
             public override Color ImageMarginGradientEnd { get { return Color.FromArgb(16, 20, 21); } }
-            public override Color SeparatorDark { get { return Color.FromArgb(41, 48, 50); } }
-            public override Color SeparatorLight { get { return Color.FromArgb(23, 26, 27); } }
+            public override Color SeparatorDark { get { return Color.FromArgb(49, 58, 60); } }
+            public override Color SeparatorLight { get { return Color.FromArgb(25, 30, 31); } }
+        }
+
+        private sealed class TacticalMenuRenderer : WinForms.ToolStripProfessionalRenderer
+        {
+            public TacticalMenuRenderer() : base(new TacticalColorTable()) { }
+
+            protected override void OnRenderToolStripBackground(WinForms.ToolStripRenderEventArgs e)
+            {
+                using (var brush = new SolidBrush(Color.FromArgb(16, 20, 21)))
+                    e.Graphics.FillRectangle(brush, e.AffectedBounds);
+            }
+
+            protected override void OnRenderToolStripBorder(WinForms.ToolStripRenderEventArgs e)
+            {
+                using (var pen = new Pen(Color.FromArgb(52, 62, 64)))
+                    e.Graphics.DrawRectangle(pen, 0, 0, e.ToolStrip.Width - 1, e.ToolStrip.Height - 1);
+            }
+
+            protected override void OnRenderMenuItemBackground(WinForms.ToolStripItemRenderEventArgs e)
+            {
+                if (!e.Item.Selected || !e.Item.Enabled) return;
+                Rectangle r = new Rectangle(4, 1, e.Item.Width - 8, e.Item.Height - 2);
+                using (var path = RoundedRect(r, 4))
+                using (var fill = new SolidBrush(e.Item.Pressed
+                    ? Color.FromArgb(70, 69, 107, 150)
+                    : Color.FromArgb(42, 255, 255, 255)))
+                    e.Graphics.FillPath(fill, path);
+            }
+
+            protected override void OnRenderSeparator(WinForms.ToolStripSeparatorRenderEventArgs e)
+            {
+                int y = e.Item.Height / 2;
+                using (var pen = new Pen(Color.FromArgb(49, 58, 60)))
+                    e.Graphics.DrawLine(pen, 11, y, e.Item.Width - 11, y);
+            }
+
+            protected override void OnRenderArrow(WinForms.ToolStripArrowRenderEventArgs e)
+            {
+                e.ArrowColor = Color.FromArgb(157, 169, 164);
+                base.OnRenderArrow(e);
+            }
+
+            protected override void OnRenderItemText(WinForms.ToolStripItemTextRenderEventArgs e)
+            {
+                Color color = e.Item.Enabled ? e.Item.ForeColor : Color.FromArgb(105, 114, 110);
+                var label = e.Item as WinForms.ToolStripLabel;
+                if (label != null && label.IsLink && label.LinkColor.A > 0) color = label.LinkColor;
+
+                Rectangle r = e.TextRectangle;
+                r.Y = 0;
+                r.Height = e.Item.Height;
+                e.TextRectangle = r;
+                e.TextColor = color;
+                base.OnRenderItemText(e);
+            }
+
+            private static GraphicsPath RoundedRect(Rectangle r, int radius)
+            {
+                int d = radius * 2;
+                var path = new GraphicsPath();
+                path.AddArc(r.Left, r.Top, d, d, 180, 90);
+                path.AddArc(r.Right - d, r.Top, d, d, 270, 90);
+                path.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
+                path.AddArc(r.Left, r.Bottom - d, d, d, 90, 90);
+                path.CloseFigure();
+                return path;
+            }
         }
 
         private const int WM_APP = 0x8000;
         private const int WM_TRAYICON = WM_APP + 1;
+        private const int WM_MOUSEMOVE = 0x0200;
         private const int WM_LBUTTONUP = 0x0202;
         private const int WM_LBUTTONDBLCLK = 0x0203;
         private const int WM_RBUTTONUP = 0x0205;
@@ -146,10 +214,25 @@ namespace RogMouse
             if (handler != null) { try { handler(); } catch { } }
         }
 
-        /// <summary>Repaints the tray checkbox from the registry without triggering a write.</summary>
+        /// <summary>Repaints the tray autostart state from the registry without triggering a write.</summary>
         public void SyncAutostartItem()
         {
-            if (_autostartItem != null) _autostartItem.Checked = AutoStart.IsEnabled();
+            if (_autostartItem == null) return;
+            bool enabled = AutoStart.IsEnabled();
+            _autostartItem.Text = enabled ? "开机自启动  ·  已开启" : "开机自启动  ·  已关闭";
+            _autostartItem.ForeColor = enabled
+                ? Color.FromArgb(121, 255, 90)
+                : Color.FromArgb(165, 176, 171);
+        }
+
+        private WinForms.ToolStripMenuItem AddActionItem(string text)
+        {
+            var item = new WinForms.ToolStripMenuItem(text);
+            item.ForeColor = Color.FromArgb(220, 225, 221);
+            item.Padding = new WinForms.Padding(12, 6, 14, 6);
+            item.Margin = new WinForms.Padding(4, 1, 4, 1);
+            _menu.Items.Add(item);
+            return item;
         }
 
         private IntPtr _hwnd;
@@ -177,65 +260,66 @@ namespace RogMouse
             _menu.BackColor = Color.FromArgb(11, 15, 16);
             _menu.ForeColor = Color.FromArgb(242, 240, 234);
             _menu.Font = new Font("Microsoft YaHei UI", 9f);
-            _menu.Padding = new WinForms.Padding(0, 5, 0, 5);
-            _menu.Renderer = new WinForms.ToolStripProfessionalRenderer(new TacticalColorTable());
+            _menu.Padding = new WinForms.Padding(0, 6, 0, 6);
+            _menu.MinimumSize = new System.Drawing.Size(248, 0);
+            _menu.DropShadowEnabled = true;
+            _menu.Renderer = new TacticalMenuRenderer();
 
-            var header = new WinForms.ToolStripLabel("DEVICE TELEMETRY");
-            header.Font = new Font("Bahnschrift", 8f);
-            header.ForeColor = Color.FromArgb(137, 147, 143);
-            header.Padding = new WinForms.Padding(12, 2, 0, 3);
+            var header = new WinForms.ToolStripLabel("外设仪表台");
+            header.Font = new Font("Microsoft YaHei UI", 10.5f, System.Drawing.FontStyle.Bold);
+            header.ForeColor = Color.FromArgb(244, 241, 233);
+            header.Padding = new WinForms.Padding(12, 4, 0, 2);
             _menu.Items.Add(header);
 
             _mouseStatusItem = new WinForms.ToolStripLabel("● 月刃 · 正在读取…");
             _mouseStatusItem.Font = new Font("Microsoft YaHei UI", 9f);
             _mouseStatusItem.ForeColor = Color.FromArgb(255, 70, 85);
-            _mouseStatusItem.Padding = new WinForms.Padding(12, 1, 0, 1);
+            _mouseStatusItem.Padding = new WinForms.Padding(12, 4, 0, 3);
+            _mouseStatusItem.IsLink = true;
+            _mouseStatusItem.LinkBehavior = WinForms.LinkBehavior.HoverUnderline;
+            _mouseStatusItem.LinkColor = Color.FromArgb(255, 70, 85);
+            _mouseStatusItem.ActiveLinkColor = Color.FromArgb(255, 128, 137);
+            _mouseStatusItem.ToolTipText = "打开鼠标控制页";
+            _mouseStatusItem.Click += delegate { ShowDevice(false); };
             _menu.Items.Add(_mouseStatusItem);
 
             _headsetStatusItem = new WinForms.ToolStripLabel("● 黑鲨 · 正在读取…");
             _headsetStatusItem.Font = new Font("Microsoft YaHei UI", 9f);
             _headsetStatusItem.ForeColor = Color.FromArgb(121, 255, 90);
-            _headsetStatusItem.Padding = new WinForms.Padding(12, 1, 0, 1);
+            _headsetStatusItem.Padding = new WinForms.Padding(12, 3, 0, 5);
+            _headsetStatusItem.IsLink = true;
+            _headsetStatusItem.LinkBehavior = WinForms.LinkBehavior.HoverUnderline;
+            _headsetStatusItem.LinkColor = Color.FromArgb(121, 255, 90);
+            _headsetStatusItem.ActiveLinkColor = Color.FromArgb(180, 255, 156);
+            _headsetStatusItem.ToolTipText = "打开耳机电量页";
+            _headsetStatusItem.Click += delegate { ShowDevice(true); };
             _menu.Items.Add(_headsetStatusItem);
             _menu.Items.Add(new WinForms.ToolStripSeparator());
 
-            var show = new WinForms.ToolStripMenuItem("显示主窗口");
+            var show = AddActionItem("显示主窗口");
             show.Click += delegate { ShowWindow(); };
-            _menu.Items.Add(show);
 
-            var showMouse = new WinForms.ToolStripMenuItem("打开鼠标控制页");
-            showMouse.Click += delegate { ShowDevice(false); };
-            _menu.Items.Add(showMouse);
-
-            var showHeadset = new WinForms.ToolStripMenuItem("打开耳机电量页");
-            showHeadset.Click += delegate { ShowDevice(true); };
-            _menu.Items.Add(showHeadset);
-
-            var reread = new WinForms.ToolStripMenuItem("重新读取两台设备");
+            var reread = AddActionItem("重新读取两台设备");
             reread.Click += delegate { if (_refresh != null) _refresh(); };
-            _menu.Items.Add(reread);
 
             // Launch-at-logon mirrors the in-app switch; both call the same AutoStart.Set.
-            _autostartItem = new WinForms.ToolStripMenuItem("开机自启动");
-            _autostartItem.CheckOnClick = true;
-            _autostartItem.Checked = AutoStart.IsEnabled();
+            _autostartItem = AddActionItem("开机自启动");
             _autostartItem.Click += delegate
             {
-                string error = AutoStart.Set(_autostartItem.Checked);
+                bool want = !AutoStart.IsEnabled();
+                string error = AutoStart.Set(want);
                 if (error != null)
                 {
-                    // Roll the checkmark back so it never claims a state the registry rejects.
-                    _autostartItem.Checked = false;
                     Log("autostart failed: " + error);
                 }
+                SyncAutostartItem();
                 RaiseAutostartChanged();
             };
-            _menu.Items.Add(_autostartItem);
 
             _menu.Items.Add(new WinForms.ToolStripSeparator());
-            var quitItem = new WinForms.ToolStripMenuItem("退出");
+            var quitItem = AddActionItem("退出");
             quitItem.Click += delegate { if (_quit != null) _quit(); };
-            _menu.Items.Add(quitItem);
+            SyncAutostartItem();
 
             _taskbarCreated = RegisterWindowMessage("TaskbarCreated");
             Log("TrayIcon created, taskbarCreated=" + _taskbarCreated);
@@ -269,7 +353,7 @@ namespace RogMouse
             IntPtr handle;
             Icon initial = BuildIcon(-1, -1, out handle);
             _iconHandle = handle;
-            if (!AddIcon(handle, "ROG 月刃 控制中心")) StartRetry();
+            if (!AddIcon(handle, "外设仪表台")) StartRetry();
         }
 
         /// <summary>Retries a refused registration; raises <see cref="RegisteredChanged"/> when it settles.</summary>
@@ -489,7 +573,11 @@ namespace RogMouse
 
             // NOTIFYICON_VERSION_4: lParam's low word carries the mouse message.
             int mouse = (int)(lParam.ToInt64() & 0xFFFF);
-            if (mouse == WM_LBUTTONUP || mouse == WM_LBUTTONDBLCLK)
+            if (mouse == WM_MOUSEMOVE)
+            {
+                RefreshTooltipForHover();
+            }
+            else if (mouse == WM_LBUTTONUP || mouse == WM_LBUTTONDBLCLK)
             {
                 ShowWindow();
                 handled = true;
@@ -500,6 +588,24 @@ namespace RogMouse
                 handled = true;
             }
             return IntPtr.Zero;
+        }
+
+        private void RefreshTooltipForHover()
+        {
+            DateTime now = DateTime.UtcNow;
+            if ((now - _lastHoverTipRefresh).TotalMilliseconds < 750) return;
+            _lastHoverTipRefresh = now;
+            RefreshTooltip();
+        }
+
+        private void RefreshTooltip()
+        {
+            if (!_registered || _hwnd == IntPtr.Zero || string.IsNullOrEmpty(_lastTip)) return;
+            var data = NewData();
+            data.uFlags = NIF_TIP | NIF_SHOWTIP;
+            data.szTip = _lastTip;
+            if (!Shell_NotifyIcon(NIM_MODIFY, ref data))
+                Log("NIM_MODIFY tooltip failed, win32=" + Marshal.GetLastWin32Error());
         }
 
         private void ShowMenu()
@@ -552,6 +658,7 @@ namespace RogMouse
         private int _lastHeadsetPercent = int.MinValue;
         private bool _lastHeadsetPowerKnown;
         private bool _lastHeadsetExternalPower;
+        private DateTime _lastHoverTipRefresh = DateTime.MinValue;
 
         public void Update(int mousePercent, string transport, int headsetPercent,
             bool headsetPowerKnown, bool headsetExternalPower)
@@ -570,25 +677,18 @@ namespace RogMouse
 
             string mouseBody = mousePercent >= 0 ? mousePercent + "%" : "--";
             string headsetBody = headsetPercent >= 0 ? headsetPercent + "%" : "--";
-            string headsetState = !headsetPowerKnown ? "" : (headsetExternalPower ? " 充电线" : " 电池");
-            string tip = "鼠标 " + mouseBody + (string.IsNullOrEmpty(transport) ? "" : " · " + transport)
-                + "  |  耳机 " + headsetBody + headsetState;
+            string tip = "鼠标 " + mouseBody + "  |  耳机 " + headsetBody;
             tip = Truncate(tip);
             _lastTip = tip;
 
             if (_mouseStatusItem != null)
-                _mouseStatusItem.Text = "● 月刃  " + mouseBody
-                    + (string.IsNullOrEmpty(transport) ? "" : "  " + transport);
+                _mouseStatusItem.Text = "● 月刃  " + mouseBody;
             if (_headsetStatusItem != null)
-                _headsetStatusItem.Text = "● 黑鲨  " + headsetBody + headsetState;
+                _headsetStatusItem.Text = "● 黑鲨  " + headsetBody;
 
             if (sameIcon && _registered && _hwnd != IntPtr.Zero)
             {
-                var data = NewData();
-                data.uFlags = NIF_TIP | NIF_SHOWTIP;
-                data.szTip = tip;
-                if (!Shell_NotifyIcon(NIM_MODIFY, ref data))
-                    Log("NIM_MODIFY tooltip failed, win32=" + Marshal.GetLastWin32Error());
+                RefreshTooltip();
                 return;
             }
 
@@ -607,7 +707,7 @@ namespace RogMouse
                 var data = NewData();
                 data.uFlags = NIF_INFO;
                 data.szInfoTitle = "仍在后台运行";
-                data.szInfo = "控制中心已最小化到托盘，双击图标可重新打开，右键可退出。";
+                data.szInfo = "外设仪表台已最小化到托盘，双击图标可重新打开，右键可退出。";
                 data.dwInfoFlags = NIIF_INFO;
                 Shell_NotifyIcon(NIM_MODIFY, ref data);
             }
@@ -711,7 +811,7 @@ namespace RogMouse
                 string root = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                 if (!string.IsNullOrEmpty(root))
                 {
-                    string dir = Path.Combine(root, "ROGMouse");
+                    string dir = Path.Combine(root, "PeripheralInstrument");
                     Directory.CreateDirectory(dir);
                     File.AppendAllText(Path.Combine(dir, "tray.log"), line);
                     return;
