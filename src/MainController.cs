@@ -65,6 +65,8 @@ namespace RogMouse
         private System.Windows.Threading.DispatcherTimer _watch;
         private System.Windows.Threading.DispatcherTimer _trayPoll;
         private System.Windows.Threading.DispatcherTimer _headsetTrayPoll;
+        private System.Windows.Threading.DispatcherTimer _startupRetry;
+        private int _startupRetryAttempts;
         private int _quietTicks;
         private bool _allowClose;
         private bool _hiddenNotice;
@@ -384,8 +386,12 @@ namespace RogMouse
             bool enabled = AutoStart.IsEnabled();
             // Upgrade or migrate an older entry in place, so an enabled startup item keeps
             // working after the executable or registry value name changes.
-            if (!enabled && AutoStart.NeedsUpgrade() && AutoStart.Enable() == null) enabled = true;
+            if (!Headless && !enabled && AutoStart.NeedsUpgrade() && AutoStart.Enable() == null)
+                enabled = true;
             _autostartToggle.IsChecked = enabled;
+            // Offscreen screenshots must not migrate the Run entry to the temporary reporter
+            // executable just because it happens to build the same visual tree.
+            if (Headless) return;
             _autostartToggle.Click += delegate
             {
                 bool want = _autostartToggle.IsChecked == true;
@@ -615,6 +621,85 @@ namespace RogMouse
             }
             TrayIcon.Log("window hidden: startup");
             _hiddenNotice = true;
+
+            // --startup only realizes the HWND; WPF never raises Loaded while the window
+            // stays hidden. Mark the session as parked first so the one-off startup read
+            // uses the normal hidden-window policy and releases the vendor handle after it
+            // finishes, then populate both tray rings immediately instead of waiting for
+            // the five-minute keep-alive.
+            _suspended = true;
+            if (_poll != null) _poll.Stop();
+            if (_headset != null) _headset.SyncAccess(true);
+            BeginStartupRead();
+        }
+
+        private void BeginStartupRead()
+        {
+            TrayIcon.Log("startup initial read: starting");
+            BeginRefresh();
+            if (_headset == null) return;
+            _headset.RefreshForTray(delegate(HeadsetReading reading)
+            {
+                TrayIcon.Log("startup initial read: headset "
+                    + (reading == null ? "failed" : reading.Status + " " + reading.BatteryPercent + "%"));
+                PushTray();
+            });
+            StartStartupRetry();
+        }
+
+        /// <summary>
+        /// The first read after logon can land while either wireless device is still asleep.
+        /// Retry briefly instead of leaving a tray ring empty until the five-minute keep-alive.
+        /// Each attempt uses the same one-shot, release-after-read paths as the tray timers.
+        /// </summary>
+        private void StartStartupRetry()
+        {
+            if (_startupRetry != null || NoDevice || NoPoll) return;
+            _startupRetryAttempts = 0;
+            _startupRetry = new System.Windows.Threading.DispatcherTimer();
+            _startupRetry.Interval = TimeSpan.FromSeconds(10);
+            _startupRetry.Tick += delegate { StartupRetryTick(); };
+            _startupRetry.Start();
+        }
+
+        private void StartupRetryTick()
+        {
+            if (FullScreenAppRunning())
+            {
+                StopStartupRetry();
+                return;
+            }
+
+            bool needMouse = _state == null || _state.BatteryPercent < 0;
+            bool needHeadset = _headset == null || _headset.LastReading == null
+                || _headset.LastReading.Status != HeadsetStatus.Ok;
+            if (!needMouse && !needHeadset)
+            {
+                StopStartupRetry();
+                TrayIcon.Log("startup initial read: settled");
+                return;
+            }
+            if (_startupRetryAttempts >= 4)
+            {
+                StopStartupRetry();
+                TrayIcon.Log("startup initial read: retries exhausted");
+                return;
+            }
+
+            _startupRetryAttempts++;
+            TrayIcon.Log("startup initial read: retry " + _startupRetryAttempts
+                + " mouse=" + (needMouse ? "missing" : "ok")
+                + " headset=" + (needHeadset ? "missing" : "ok"));
+            if (needMouse) TrayPollTick();
+            if (needHeadset)
+                _headset.RefreshForTray(delegate(HeadsetReading reading) { PushTray(); });
+        }
+
+        private void StopStartupRetry()
+        {
+            if (_startupRetry == null) return;
+            _startupRetry.Stop();
+            _startupRetry = null;
         }
 
         /// <summary>
@@ -705,6 +790,7 @@ namespace RogMouse
             // already kicks off the initial read.
             if (!_suspended) return;
             _suspended = false;
+            StopStartupRetry();
             TrayIcon.Log("device access resumed: reopening vendor handle");
             _quietTicks = 0;
             if (_poll != null && !_poll.IsEnabled) _poll.Start();
@@ -726,6 +812,7 @@ namespace RogMouse
             if (_poll != null) _poll.Stop();
             if (_trayPoll != null) _trayPoll.Stop();
             if (_headsetTrayPoll != null) _headsetTrayPoll.Stop();
+            StopStartupRetry();
             if (_headset != null) _headset.Shutdown();
             if (_tray != null) { _tray.Dispose(); _tray = null; }
             if (_api != null) { _api.Dispose(); _api = null; }

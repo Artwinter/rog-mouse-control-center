@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6.1 - 2026-10-31
+
+### Fixed
+
+- Silent logon startup now reads both mouse and headset immediately, so the tray battery rings no longer remain empty until the five-minute keep-alive.
+- Startup reads retry briefly when a wireless device is still asleep, then stop as soon as both readings are available.
+- Offscreen screenshot mode no longer migrates the Windows startup entry to a temporary reporter executable.
+
 ## v1.6.0 - 2026-10-29
 
 ### Added

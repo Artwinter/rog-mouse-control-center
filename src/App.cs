@@ -10,9 +10,9 @@ using System.Windows.Threading;
 [assembly: AssemblyTitle("Peripheral Instrument")]
 [assembly: AssemblyProduct("外设仪表台")]
 [assembly: AssemblyDescription("Local peripheral control and telemetry")]
-[assembly: AssemblyVersion("1.6.0.0")]
-[assembly: AssemblyFileVersion("1.6.0.0")]
-[assembly: AssemblyInformationalVersion("1.6.0")]
+[assembly: AssemblyVersion("1.6.1.0")]
+[assembly: AssemblyFileVersion("1.6.1.0")]
+[assembly: AssemblyInformationalVersion("1.6.1")]
 
 namespace RogMouse
 {
@@ -116,6 +116,9 @@ namespace RogMouse
                 new System.Windows.Interop.WindowInteropHelper(win).EnsureHandle();
                 win.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(delegate
                 {
+                    // HideForStartup also performs the first device read. SourceInitialized
+                    // has already registered the tray icon by this point; Loaded will not fire
+                    // for this never-shown window.
                     if (Controller != null) Controller.HideForStartup();
                 }));
             }
